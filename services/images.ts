@@ -62,7 +62,7 @@ export const regenerateMissingImages = async (
         onProgress(i + 1, cardsWithoutImages.length, card.originalTerm);
 
         try {
-            const prompt = `A simple, colorful illustration representing the word "${card.originalTerm}" (${card.translation}). Clean, minimal style with soft gradients, no text.`;
+            const prompt = `A realistic, life-like illustration of "${card.originalTerm}" (${card.translation}). Show a concrete scene or object that represents this word. Style: Modern digital art, warm colors, soft lighting, educational flashcard style. No text or letters in the image.`;
             const imageUrl = await getOrGenerateImage(prompt, card.originalTerm);
 
             // Update in database

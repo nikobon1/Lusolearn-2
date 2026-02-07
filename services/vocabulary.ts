@@ -137,7 +137,10 @@ export const generateCardDetails = async (word: string): Promise<AICardDetails> 
     Requirements:
     1. Definition in simple PT.
     2. 4 Examples (A1-B2).
-    3. Visual prompt for icon.
+    3. Visual prompt: Write a detailed prompt for generating a REALISTIC, life-like illustration of this word. 
+       The prompt should describe a concrete scene or object that represents the word's meaning.
+       Style: Modern digital art, warm colors, soft lighting, educational flashcard style.
+       Example for "o pão": "A freshly baked loaf of bread on a wooden cutting board, with steam rising, warm kitchen background"
     4. Grammar notes in Russian.
     5. Frequency rank estimate.
     6. Conjugation if verb (Present, Perf, Imperf, Future).
