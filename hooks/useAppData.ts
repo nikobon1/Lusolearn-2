@@ -80,7 +80,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
                     }
 
                     return {
-                        id: c.id, user_id: session.user.id, original_term: c.originalTerm, translation: c.translation, folder_ids: c.folderIds, tags: c.tags, frequency: c.frequency, interval: c.interval, ease_factor: c.easeFactor, next_review_date: c.nextReviewDate, definition: c.definition, examples: c.examples, grammar_notes: c.grammarNotes, conjugation: c.conjugation, image_url: imageUrl, image_prompt: c.imagePrompt, audio_url: audioUrl,
+                        id: c.id, user_id: session.user.id, original_term: c.originalTerm, translation: c.translation, folder_ids: c.folderIds, tags: c.tags, frequency: c.frequency, interval: c.interval, ease_factor: c.easeFactor, next_review_date: c.nextReviewDate, definition: c.definition, examples: c.examples, grammar_notes: c.grammarNotes, conjugation: c.conjugation, image_url: imageUrl, audio_url: audioUrl,
                     };
                 }));
 
