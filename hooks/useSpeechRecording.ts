@@ -7,8 +7,10 @@ interface UseSpeechRecordingResult {
     error: string | null;
     result: PronunciationScore | null;
     transcription: TranscriptionResult | null;
+    recordingUrl: string | null;
     startRecording: () => Promise<void>;
     stopAndEvaluate: (expectedText: string) => Promise<PronunciationScore | null>;
+    playRecording: () => void;
     reset: () => void;
 }
 
@@ -18,16 +20,23 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<PronunciationScore | null>(null);
     const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
+    const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const streamRef = useRef<MediaStream | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const startRecording = useCallback(async () => {
         try {
             setError(null);
             setResult(null);
             setTranscription(null);
+            // Clean up previous recording URL
+            if (recordingUrl) {
+                URL.revokeObjectURL(recordingUrl);
+                setRecordingUrl(null);
+            }
             chunksRef.current = [];
 
             console.log('[Speech] 🎤 Requesting microphone access...');
@@ -68,7 +77,7 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                 setError('Ошибка при доступе к микрофону: ' + err.message);
             }
         }
-    }, []);
+    }, [recordingUrl]);
 
     const stopAndEvaluate = useCallback(async (expectedText: string): Promise<PronunciationScore | null> => {
         return new Promise((resolve) => {
@@ -100,6 +109,11 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                         return;
                     }
 
+                    // Save recording URL for playback
+                    const url = URL.createObjectURL(audioBlob);
+                    setRecordingUrl(url);
+                    console.log('[Speech] 💾 Recording saved for playback');
+
                     const transcriptionResult = await transcribeAudio(audioBlob);
                     setTranscription(transcriptionResult);
 
@@ -127,6 +141,22 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
         });
     }, [isRecording]);
 
+    const playRecording = useCallback(() => {
+        if (!recordingUrl) return;
+
+        // Stop previous playback if any
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+
+        const audio = new Audio(recordingUrl);
+        audioRef.current = audio;
+        audio.play().catch(err => {
+            console.error('[Speech] ❌ Playback error:', err);
+        });
+        console.log('[Speech] 🔊 Playing user recording');
+    }, [recordingUrl]);
+
     const reset = useCallback(() => {
         setError(null);
         setResult(null);
@@ -134,11 +164,22 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
         setIsProcessing(false);
         setIsRecording(false);
 
+        // Clean up recording URL
+        if (recordingUrl) {
+            URL.revokeObjectURL(recordingUrl);
+            setRecordingUrl(null);
+        }
+
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
         }
-    }, []);
+
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+    }, [recordingUrl]);
 
     return {
         isRecording,
@@ -146,8 +187,10 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
         error,
         result,
         transcription,
+        recordingUrl,
         startRecording,
         stopAndEvaluate,
+        playRecording,
         reset
     };
 }

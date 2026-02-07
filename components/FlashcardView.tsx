@@ -422,10 +422,10 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
                                     }}
                                     disabled={speech.isProcessing}
                                     className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-lg ${speech.isRecording
-                                            ? 'bg-rose-500 hover:bg-rose-600 animate-pulse'
-                                            : speech.isProcessing
-                                                ? 'bg-slate-300 dark:bg-slate-600 cursor-wait'
-                                                : 'bg-violet-600 hover:bg-violet-700'
+                                        ? 'bg-rose-500 hover:bg-rose-600 animate-pulse'
+                                        : speech.isProcessing
+                                            ? 'bg-slate-300 dark:bg-slate-600 cursor-wait'
+                                            : 'bg-violet-600 hover:bg-violet-700'
                                         }`}
                                 >
                                     {speech.isProcessing ? (
@@ -464,15 +464,15 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
                                 <div className="w-full space-y-4">
                                     {/* Score */}
                                     <div className={`p-4 rounded-2xl text-center ${speech.result.isCorrect
-                                            ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30'
-                                            : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30'
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30'
+                                        : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30'
                                         }`}>
                                         <div className="text-4xl mb-2">
                                             {speech.result.score >= 90 ? '🎉' : speech.result.score >= 70 ? '👍' : speech.result.score >= 50 ? '🔄' : '🎯'}
                                         </div>
                                         <p className={`text-lg font-bold ${speech.result.isCorrect
-                                                ? 'text-emerald-700 dark:text-emerald-300'
-                                                : 'text-amber-700 dark:text-amber-300'
+                                            ? 'text-emerald-700 dark:text-emerald-300'
+                                            : 'text-amber-700 dark:text-amber-300'
                                             }`}>
                                             {speech.result.feedback}
                                         </p>
@@ -484,6 +484,16 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
                                         <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Распознано:</p>
                                         <p className="text-slate-700 dark:text-slate-200 font-medium">"{speech.result.heard}"</p>
                                     </div>
+
+                                    {/* Play My Recording */}
+                                    {speech.recordingUrl && (
+                                        <button
+                                            onClick={() => speech.playRecording()}
+                                            className="w-full py-3 flex items-center justify-center gap-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                                        >
+                                            🎧 Послушать свою запись
+                                        </button>
+                                    )}
 
                                     {/* Try Again */}
                                     <button
