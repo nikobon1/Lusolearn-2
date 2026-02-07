@@ -243,18 +243,22 @@ export const getOrGenerateAudio = async (text: string, cachedSource?: string): P
 export const generateAudio = async (text: string, mode: 'card' | 'story' = 'card'): Promise<string> => {
     const ai = getAIClient();
 
+    // Prepend language instruction for European Portuguese accent
+    const ptPTInstruction = "[Speak in European Portuguese (pt-PT), with a Lisbon accent. Do NOT use Brazilian Portuguese.] ";
+    const textWithInstruction = ptPTInstruction + text;
+
     console.log(`[Gemini TTS] 🎙️ Generating audio for: "${text.substring(0, 30)}..."`);
 
     try {
         const response = await callWithRetry(() => ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
-            contents: { parts: [{ text: text }] },
+            contents: { parts: [{ text: textWithInstruction }] },
             config: {
                 responseModalities: ["AUDIO"],
                 speechConfig: {
                     voiceConfig: {
                         prebuiltVoiceConfig: {
-                            voiceName: "Aoede" // Clear voice for European Portuguese
+                            voiceName: "Aoede"
                         }
                     }
                 }
