@@ -2,24 +2,39 @@ import { Type, GenerateContentResponse } from "@google/genai";
 import { getAIClient, callWithRetry } from "./client";
 import { VocabularyItem, AICardDetails, Example } from "../types";
 
+export interface VocabularyExtractionResult {
+    items: VocabularyItem[];
+    suggestedFolder: string;
+}
+
 export const extractVocabulary = async (
     input: string | { imageBase64: string; mimeType: string },
     mode: 'text' | 'image',
     count: number = 5
-): Promise<VocabularyItem[]> => {
+): Promise<VocabularyExtractionResult> => {
     const ai = getAIClient();
 
     const extractionSchema = {
-        type: Type.ARRAY,
-        items: {
-            type: Type.OBJECT,
-            properties: {
-                word: { type: Type.STRING, description: "The extracted Portuguese word (lemma/dictionary form). If Noun, include Article." },
-                translation: { type: Type.STRING, description: "Russian translation." },
-                context: { type: Type.STRING, description: "Краткое объяснение на РУССКОМ языке, почему это слово выделено (контекст)." }
+        type: Type.OBJECT,
+        properties: {
+            suggestedFolder: {
+                type: Type.STRING,
+                description: "Suggested folder name in Russian based on the theme of all words (e.g. 'Еда', 'Путешествия', 'Дом', 'Работа', 'Глаголы движения'). Should be short, 1-2 words."
             },
-            required: ["word", "translation", "context"]
-        }
+            items: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        word: { type: Type.STRING, description: "The extracted Portuguese word (lemma/dictionary form). If Noun, include Article." },
+                        translation: { type: Type.STRING, description: "Russian translation." },
+                        context: { type: Type.STRING, description: "Краткое объяснение на РУССКОМ языке, почему это слово выделено (контекст)." }
+                    },
+                    required: ["word", "translation", "context"]
+                }
+            }
+        },
+        required: ["suggestedFolder", "items"]
     };
 
     const prompt = `
@@ -29,8 +44,9 @@ export const extractVocabulary = async (
     1. If NOUN, include definite article (o/a/os/as).
     2. If VERB, provide infinitive.
     3. Context in Russian.
+    4. Suggest a folder name in Russian that best describes all these words thematically (e.g. "Еда", "Природа", "Одежда", "Глаголы").
 
-    Return JSON array.
+    Return JSON with suggestedFolder and items array.
   `;
 
     let contents;
@@ -58,7 +74,12 @@ export const extractVocabulary = async (
 
     const text = response.text;
     if (!text) throw new Error("No vocabulary found");
-    return JSON.parse(text) as VocabularyItem[];
+
+    const result = JSON.parse(text) as { suggestedFolder: string; items: VocabularyItem[] };
+    return {
+        items: result.items || [],
+        suggestedFolder: result.suggestedFolder || 'Разное'
+    };
 };
 
 export const generateCardDetails = async (word: string): Promise<AICardDetails> => {
