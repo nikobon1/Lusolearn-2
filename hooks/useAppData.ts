@@ -4,7 +4,7 @@ import { supabase, uploadBase64File } from '../services/supabase';
 import { UserProfile, Flashcard, Folder, SavedStory, QuestType, Quest, Difficulty } from '../types';
 
 const INITIAL_USER: UserProfile = {
-  xp: 0, level: 1, streak: 0, lastStudyDate: '', cardsLearned: 0, learningHistory: {}, quests: []
+    xp: 0, level: 1, streak: 0, lastStudyDate: '', cardsLearned: 0, learningHistory: {}, quests: []
 };
 
 const generateDailyQuests = (): Quest[] => {
@@ -59,31 +59,31 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
     const addCards = async (newCards: Flashcard[]) => {
         setCards(prev => [...newCards, ...prev]);
         updateQuestProgress('add_cards', newCards.length);
-        
+
         if (session && session.user.email !== 'offline@demo.com') {
             try {
                 const rows = await Promise.all(newCards.map(async (c) => {
                     let audioUrl = c.audioBase64;
                     // If audio is big base64 (not URL), upload it
                     if (c.audioBase64 && c.audioBase64.length > 500 && !c.audioBase64.startsWith('http')) {
-                         const fileName = `${session.user.id}/${c.id}.mp3`;
-                         const publicUrl = await uploadBase64File('media', `audio/${fileName}`, c.audioBase64, 'audio/mp3');
-                         if (publicUrl) audioUrl = publicUrl;
+                        const fileName = `${session.user.id}/${c.id}.mp3`;
+                        const publicUrl = await uploadBase64File('media', `audio/${fileName}`, c.audioBase64, 'audio/mp3');
+                        if (publicUrl) audioUrl = publicUrl;
                     }
-                    
+
                     let imageUrl = c.imageUrl;
                     // If image is big base64, upload it
                     if (c.imageUrl && c.imageUrl.length > 500 && !c.imageUrl.startsWith('http')) {
-                         const fileName = `${session.user.id}/${c.id}.png`;
-                         const publicUrl = await uploadBase64File('media', `images/${fileName}`, c.imageUrl, 'image/png');
-                         if (publicUrl) imageUrl = publicUrl;
+                        const fileName = `${session.user.id}/${c.id}.png`;
+                        const publicUrl = await uploadBase64File('media', `images/${fileName}`, c.imageUrl, 'image/png');
+                        if (publicUrl) imageUrl = publicUrl;
                     }
-    
+
                     return {
                         id: c.id, user_id: session.user.id, original_term: c.originalTerm, translation: c.translation, folder_ids: c.folderIds, tags: c.tags, frequency: c.frequency, interval: c.interval, ease_factor: c.easeFactor, next_review_date: c.nextReviewDate, definition: c.definition, examples: c.examples, grammar_notes: c.grammarNotes, conjugation: c.conjugation, image_url: imageUrl, image_prompt: c.imagePrompt, audio_url: audioUrl,
                     };
                 }));
-                
+
                 const { error } = await supabase.from('flashcards').insert(rows);
                 if (error) console.error("Error saving cards:", error);
             } catch (e) {
@@ -94,10 +94,10 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
 
     const saveStoryToDb = async (story: { pt: string, ru: string }, audioBase64: string, wordsUsed: string[]) => {
         if (!session) return;
-        
+
         const storyId = self.crypto.randomUUID();
         let audioUrl = null;
-        
+
         // Save audio to user storage
         if (audioBase64 && !audioBase64.startsWith('http') && session.user.email !== 'offline@demo.com') {
             const publicUrl = await uploadBase64File('media', `audio/${session.user.id}/stories/${storyId}.mp3`, audioBase64, 'audio/mp3');
@@ -106,8 +106,8 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
             audioUrl = audioBase64;
         }
 
-        const newStory: SavedStory = { 
-            id: storyId, contentPt: story.pt, contentRu: story.ru, audioUrl: audioUrl || undefined, wordsUsed: wordsUsed, createdAt: Date.now() 
+        const newStory: SavedStory = {
+            id: storyId, contentPt: story.pt, contentRu: story.ru, audioUrl: audioUrl || undefined, wordsUsed: wordsUsed, createdAt: Date.now()
         };
 
         setSavedStories(prev => [newStory, ...prev]);
@@ -142,13 +142,19 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
                     setUser(defaultUser);
                 }
                 // Folders
-                const { data: dbFolders } = await supabase.from('folders').select('*');
+                const { data: dbFolders, error: foldersError } = await supabase.from('folders').select('*').eq('user_id', session.user.id);
+                if (foldersError) console.error('[Data] Folders fetch error:', foldersError);
                 if (dbFolders) setFolders(dbFolders.map(f => ({ id: f.id, name: f.name, createdAt: new Date(f.created_at).getTime() })));
+                console.log('[Data] Loaded folders:', dbFolders?.length || 0);
+
                 // Cards
-                const { data: dbCards } = await supabase.from('flashcards').select('*');
+                const { data: dbCards, error: cardsError } = await supabase.from('flashcards').select('*').eq('user_id', session.user.id);
+                if (cardsError) console.error('[Data] Cards fetch error:', cardsError);
                 if (dbCards) setCards(dbCards.map(row => ({ id: row.id, folderIds: row.folder_ids || [], tags: row.tags || [], originalTerm: row.original_term, translation: row.translation, frequency: row.frequency, imageUrl: row.image_url, audioBase64: row.audio_url, interval: row.interval, easeFactor: row.ease_factor, nextReviewDate: row.next_review_date, createdAt: new Date(row.created_at).getTime(), difficulty: row.difficulty || Difficulty.New, definition: row.definition, examples: row.examples, grammarNotes: row.grammar_notes, conjugation: row.conjugation, imagePrompt: row.image_prompt })));
+                console.log('[Data] Loaded cards:', dbCards?.length || 0);
+
                 // Stories
-                const { data: dbStories } = await supabase.from('stories').select('*').order('created_at', { ascending: false });
+                const { data: dbStories } = await supabase.from('stories').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
                 if (dbStories) setSavedStories(dbStories.map(s => ({ id: s.id, contentPt: s.content_pt, contentRu: s.content_ru, audioUrl: s.audio_url, wordsUsed: s.words_used, createdAt: new Date(s.created_at).getTime() })));
 
             } else if (offlineMode || session?.user.email === 'offline@demo.com') {
@@ -185,6 +191,6 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
 
     return {
         user, setUser, cards, setCards, folders, setFolders, savedStories, setSavedStories,
-        loading, fetchData, updateQuestProgress, addCards, saveStoryToDb 
+        loading, fetchData, updateQuestProgress, addCards, saveStoryToDb
     };
 };
