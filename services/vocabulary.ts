@@ -185,7 +185,10 @@ export const enrichCardPatterns = async (originalTerm: string, examples: Example
         }
     };
 
-    const prompt = `Analyze grammar patterns in these sentences for word "${originalTerm}". Explanations in Russian.`;
+    const prompt = `Проанализируй грамматические паттерны в этих предложениях для слова "${originalTerm}". 
+    ВАЖНО: Объяснения (explanation) ОБЯЗАТЕЛЬНО на РУССКОМ языке. 
+    target - это португальское слово/фраза из предложения.
+    explanation - объяснение грамматического правила НА РУССКОМ.`;
     const response = await callWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: { parts: [{ text: `${prompt}\n${JSON.stringify(examples)}` }] } as any,
