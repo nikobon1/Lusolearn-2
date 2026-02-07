@@ -248,7 +248,7 @@ export const generateAudio = async (text: string, mode: 'card' | 'story' = 'card
 
     // Voice ID for European Portuguese - using "Antoni" (clear male voice, good for learning)
     // Alternative voices: "Rachel" (female), or custom voice IDs
-    const voiceId = "ErXwobaYiN019PkySvjV"; // "Antoni" - multilingual voice
+    const voiceId = "zKjRewuiqTkXNUVAMwat"; // "Antoni" - multilingual voice
 
     // Adjust settings based on mode
     const stability = mode === 'story' ? 0.5 : 0.75; // More expressive for stories
