@@ -137,7 +137,15 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                 }
             };
 
-            mediaRecorder.stop();
+            // Request any remaining data before stopping
+            if (mediaRecorder.state === 'recording') {
+                mediaRecorder.requestData();
+            }
+
+            // Small delay to ensure final chunk is captured
+            setTimeout(() => {
+                mediaRecorder.stop();
+            }, 100);
         });
     }, [isRecording]);
 
