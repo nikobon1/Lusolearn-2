@@ -241,58 +241,38 @@ export const getOrGenerateAudio = async (text: string, cachedSource?: string): P
 };
 
 export const generateAudio = async (text: string, mode: 'card' | 'story' = 'card'): Promise<string> => {
-    const apiKey = process.env.ELEVEN_LABS_API_KEY;
-    if (!apiKey) {
-        throw new Error("Eleven Labs API key not found. Set ELEVEN_LABS_API_KEY in .env.local");
-    }
+    const ai = getAIClient();
 
-    // Voice ID for European Portuguese - using "Antoni" (clear male voice, good for learning)
-    // Alternative voices: "Rachel" (female), or custom voice IDs
-    const voiceId = "zKjRewuiqTkXNUVAMwat"; // "Antoni" - multilingual voice
+    console.log(`[Gemini TTS] 🎙️ Generating audio for: "${text.substring(0, 30)}..."`);
 
-    // Adjust settings based on mode
-    const stability = mode === 'story' ? 0.5 : 0.75; // More expressive for stories
-    const similarityBoost = 0.75;
-    const speed = mode === 'story' ? 1.0 : 0.9; // Slightly slower for learning
-
-    console.log(`[Eleven Labs] 🎙️ Generating audio for: "${text.substring(0, 30)}..."`)
-
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': apiKey,
-        },
-        body: JSON.stringify({
-            text: text,
-            model_id: 'eleven_multilingual_v2', // Supports European Portuguese
-            voice_settings: {
-                stability: stability,
-                similarity_boost: similarityBoost,
-                style: 0.0,
-                use_speaker_boost: true,
-                speed: speed
+    try {
+        const response = await callWithRetry(() => ai.models.generateContent({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: { parts: [{ text: text }] },
+            config: {
+                responseModalities: ["AUDIO"],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: {
+                            voiceName: "Aoede" // Clear voice for European Portuguese
+                        }
+                    }
+                }
             }
-        }),
-    });
+        }));
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Eleven Labs] ❌ Error:`, errorText);
-        throw new Error(`Eleven Labs API error: ${response.status} - ${errorText}`);
+        if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData && part.inlineData.data) {
+                    console.log(`[Gemini TTS] ✅ Audio generated successfully`);
+                    return part.inlineData.data;
+                }
+            }
+        }
+
+        throw new Error("No audio generated");
+    } catch (error) {
+        console.error(`[Gemini TTS] ❌ Error:`, error);
+        throw error;
     }
-
-    // Convert response to base64
-    const arrayBuffer = await response.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    let binary = '';
-    for (let i = 0; i < uint8Array.length; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
-    }
-    const base64Audio = btoa(binary);
-
-    console.log(`[Eleven Labs] ✅ Audio generated successfully (${Math.round(arrayBuffer.byteLength / 1024)}KB)`);
-
-    return base64Audio;
 };
