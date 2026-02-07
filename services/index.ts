@@ -3,7 +3,7 @@
 
 export { getAIClient, callWithRetry } from './client';
 export { loadAudio, playAudio, preloadAudio, getOrGenerateAudio, generateAudio } from './audio';
-export { generateImage, getOrGenerateImage } from './images';
+export { generateImage, getOrGenerateImage, regenerateMissingImages } from './images';
 export { extractVocabulary, generateCardDetails, enrichCardPatterns } from './vocabulary';
 export { generateStoryFromWords } from './stories';
 export { suggestSmartSorting, type SmartSortSuggestion } from './smartSort';
