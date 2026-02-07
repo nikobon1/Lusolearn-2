@@ -88,8 +88,19 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
 
             const mediaRecorder = mediaRecorderRef.current;
 
+            // Collect the final chunk when it arrives
+            const handleFinalData = (event: BlobEvent) => {
+                if (event.data.size > 0) {
+                    chunksRef.current.push(event.data);
+                    console.log('[Speech] 📦 Final chunk received:', event.data.size, 'bytes');
+                }
+            };
+
+            mediaRecorder.addEventListener('dataavailable', handleFinalData);
+
             mediaRecorder.onstop = async () => {
-                console.log('[Speech] ⏹️ Recording stopped, processing...');
+                console.log('[Speech] ⏹️ Recording stopped, chunks:', chunksRef.current.length);
+                mediaRecorder.removeEventListener('dataavailable', handleFinalData);
                 setIsRecording(false);
                 setIsProcessing(true);
 
@@ -100,7 +111,11 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                 }
 
                 try {
+                    // Wait a moment for any pending data
+                    await new Promise(r => setTimeout(r, 50));
+
                     const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
+                    console.log('[Speech] 💾 Total blob size:', audioBlob.size, 'bytes');
 
                     if (audioBlob.size < 1000) {
                         setError('Запись слишком короткая. Попробуйте говорить громче.');
@@ -137,15 +152,8 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                 }
             };
 
-            // Request any remaining data before stopping
-            if (mediaRecorder.state === 'recording') {
-                mediaRecorder.requestData();
-            }
-
-            // Small delay to ensure final chunk is captured
-            setTimeout(() => {
-                mediaRecorder.stop();
-            }, 100);
+            // Stop the recorder - this will trigger final dataavailable, then onstop
+            mediaRecorder.stop();
         });
     }, [isRecording]);
 
