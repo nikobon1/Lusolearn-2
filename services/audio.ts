@@ -1,6 +1,7 @@
 import { Modality, GenerateContentResponse } from "@google/genai";
 import { getAIClient, callWithRetry } from "./client";
 import { findGlobalAudio, saveGlobalAudio } from "./supabase";
+import { prefixedHash } from "../lib/hash";
 
 // --- Audio System ---
 
@@ -66,17 +67,6 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     }
     return bytes.buffer;
 }
-
-// Helper to generate a unique hash for long strings
-const simpleHash = (str: string) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash |= 0;
-    }
-    return "h" + hash.toString();
-};
 
 /**
  * Core function to load audio from any source (Cache -> URL -> Base64 -> GenAI)
@@ -194,7 +184,7 @@ export const playAudio = async (textOrSource: string, rate: number = 1.0) => {
 
     // For regular text (sentences, words) - use text directly as key
     // For base64 - use hash as key to prevent memory issues
-    const key = isBase64 ? simpleHash(textOrSource) : textOrSource;
+    const key = isBase64 ? prefixedHash(textOrSource, 'h') : textOrSource;
     const source = isBase64 ? textOrSource : undefined;
 
     try {

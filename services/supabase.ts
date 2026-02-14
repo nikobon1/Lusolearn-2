@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import { env } from '../config/env';
+// Supabase client configuration is resolved via config/env.ts
 
-// ВСТАВЬТЕ СЮДА ВАШИ ДАННЫЕ ИЗ SUPABASE DASHBOARD
-// Либо используйте переменные окружения: process.env.REACT_APP_SUPABASE_URL
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://qhyvcrwucjxsgylzmsdu.supabase.co';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_jlBgHpcHex4zHiuVBGiRvQ_sxijqujW';
+const supabaseUrl = env.supabaseUrl;
+const supabaseAnonKey = env.supabaseAnonKey;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

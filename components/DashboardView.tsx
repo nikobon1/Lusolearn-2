@@ -1,10 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '../services/supabase';
 import { Flashcard, UserProfile, Folder, ViewState } from '../types';
 import { suggestSmartSorting, SmartSortSuggestion } from '../services/geminiService';
 import { regenerateMissingImages } from '../services';
+import { simpleHash } from '../lib/hash';
+import { notifyError, notifyInfo, notifySuccess } from '../lib/notifications';
+import { createFolderRecord, deleteFolderRecord } from '../services/repositories/foldersRepository';
+import { deleteFlashcardsByIds, updateFlashcardFolders } from '../services/repositories/flashcardsRepository';
 import StatsWidget from './StatsWidget';
 import DailyQuestsWidget from './DailyQuestsWidget';
 import {
@@ -29,16 +32,6 @@ interface DashboardProps {
     theme: 'light' | 'dark';
     toggleTheme: () => void;
 }
-
-const simpleHash = (str: string) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash |= 0;
-    }
-    return hash;
-};
 
 const DashboardView: React.FC<DashboardProps> = ({
     session, user, cards, setCards, folders, setFolders,
@@ -65,6 +58,7 @@ const DashboardView: React.FC<DashboardProps> = ({
     // Image Regeneration State
     const [isRegeneratingImages, setIsRegeneratingImages] = useState(false);
     const [regenerationProgress, setRegenerationProgress] = useState({ current: 0, total: 0, word: '' });
+    const [showImageRegenConfirm, setShowImageRegenConfirm] = useState(false);
 
     // Derived State
     const filteredCards = useMemo(() => {
@@ -98,7 +92,7 @@ const DashboardView: React.FC<DashboardProps> = ({
         setShowNewFolderInput(false);
 
         if (session && session.user.email !== 'offline@demo.com') {
-            await supabase.from('folders').insert({ id: newFolder.id, user_id: session.user.id, name: newFolder.name });
+            await createFolderRecord(newFolder.id, session.user.id, newFolder.name);
         }
     };
 
@@ -117,8 +111,8 @@ const DashboardView: React.FC<DashboardProps> = ({
             const idsToDelete = new Set(cardsInFolder.map(c => c.id));
             setCards(prev => prev.filter(c => !idsToDelete.has(c.id)));
             if (session && session.user.email !== 'offline@demo.com') {
-                await supabase.from('folders').delete().eq('id', folderId);
-                await supabase.from('flashcards').delete().in('id', Array.from(idsToDelete));
+                await deleteFolderRecord(folderId);
+                await deleteFlashcardsByIds(Array.from(idsToDelete));
             }
         } else {
             setCards(prev => prev.map(c => {
@@ -128,11 +122,11 @@ const DashboardView: React.FC<DashboardProps> = ({
                 return c;
             }));
             if (session && session.user.email !== 'offline@demo.com') {
-                await supabase.from('folders').delete().eq('id', folderId);
+                await deleteFolderRecord(folderId);
                 const changedCards = cards.filter(c => c.folderIds.includes(folderId));
                 for (const c of changedCards) {
                     const newIds = c.folderIds.filter(id => id !== folderId);
-                    await supabase.from('flashcards').update({ folder_ids: newIds }).eq('id', c.id);
+                    await updateFlashcardFolders(c.id, newIds);
                 }
             }
         }
@@ -150,11 +144,11 @@ const DashboardView: React.FC<DashboardProps> = ({
                 setSelectedSortItems(allIds);
                 setShowSortModal(true);
             } else if (!isProactiveSort) {
-                alert("ИИ не нашел очевидных категорий.");
+                notifyInfo('ИИ не нашел очевидных категорий.');
             }
         } catch (e) {
             console.error(e);
-            if (!isProactiveSort) alert("Ошибка при сортировке.");
+            if (!isProactiveSort) notifyError('Ошибка при сортировке.');
         } finally {
             setIsSorting(false);
         }
@@ -181,7 +175,7 @@ const DashboardView: React.FC<DashboardProps> = ({
                         const folderObj = { id: newId, name, createdAt: Date.now() };
                         newFolders = [...newFolders, folderObj];
                         if (session && session.user.email !== 'offline@demo.com') {
-                            await supabase.from('folders').insert({ id: newId, user_id: session.user.id, name });
+                            await createFolderRecord(newId, session.user.id, name);
                         }
                         targetId = newId;
                     }
@@ -197,7 +191,7 @@ const DashboardView: React.FC<DashboardProps> = ({
                         newCards[cardIndex] = card;
 
                         if (session && session.user.email !== 'offline@demo.com') {
-                            updates.push(supabase.from('flashcards').update({ folder_ids: oldFolders }).eq('id', cardId));
+                            updates.push(updateFlashcardFolders(cardId, oldFolders));
                         }
                     }
                 }
@@ -213,14 +207,14 @@ const DashboardView: React.FC<DashboardProps> = ({
             setIsProactiveSort(false);
         } catch (err) {
             console.error("Auto sort failed", err);
-            alert("Ошибка при сохранении сортировки");
+            notifyError('Ошибка при сохранении сортировки.');
         }
     };
 
     const handleAutoSort = () => {
         setIsProactiveSort(false);
         const candidates = cards.filter(c => c.folderIds.includes('default') || c.folderIds.length === 0);
-        if (candidates.length === 0) { alert("Все карточки уже отсортированы!"); return; }
+        if (candidates.length === 0) { notifyInfo('Все карточки уже отсортированы.'); return; }
         runSmartSort(candidates);
     };
 
@@ -235,11 +229,15 @@ const DashboardView: React.FC<DashboardProps> = ({
     const handleRegenerateImages = async () => {
         const cardsWithoutImages = cards.filter(c => !c.imageUrl || c.imageUrl === '');
         if (cardsWithoutImages.length === 0) {
-            alert("Все карточки уже имеют изображения!");
+            notifyInfo('Все карточки уже имеют изображения.');
             return;
         }
 
-        if (!confirm(`Сгенерировать изображения для ${cardsWithoutImages.length} карточек?`)) return;
+        setShowImageRegenConfirm(true);
+    };
+
+    const startRegenerateImages = async () => {
+        setShowImageRegenConfirm(false);
 
         setIsRegeneratingImages(true);
         try {
@@ -252,10 +250,10 @@ const DashboardView: React.FC<DashboardProps> = ({
                     ));
                 }
             );
-            alert("Готово! Изображения сгенерированы.");
+            notifySuccess('Изображения сгенерированы.');
         } catch (error) {
             console.error("Regeneration error:", error);
-            alert("Ошибка при генерации изображений");
+            notifyError('Ошибка при генерации изображений.');
         } finally {
             setIsRegeneratingImages(false);
             setRegenerationProgress({ current: 0, total: 0, word: '' });
@@ -445,6 +443,19 @@ const DashboardView: React.FC<DashboardProps> = ({
                             <button onClick={() => confirmDeleteFolder(true)} className="w-full py-3 bg-rose-600 text-white font-bold rounded-xl">Удалить всё</button>
                             <button onClick={() => confirmDeleteFolder(false)} className="w-full py-3 bg-white border-2 border-slate-200 font-bold rounded-xl">Оставить слова</button>
                             <button onClick={() => setFolderToDelete(null)} className="w-full py-2 text-sm text-slate-400 font-medium">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showImageRegenConfirm && (
+                <div className="absolute inset-0 z-[85] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Сгенерировать изображения?</h3>
+                        <p className="text-sm text-slate-500 mb-6">Будут обработаны карточки без изображения.</p>
+                        <div className="space-y-3">
+                            <button onClick={startRegenerateImages} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl">Начать</button>
+                            <button onClick={() => setShowImageRegenConfirm(false)} className="w-full py-3 bg-white border-2 border-slate-200 font-bold rounded-xl">Отмена</button>
                         </div>
                     </div>
                 </div>

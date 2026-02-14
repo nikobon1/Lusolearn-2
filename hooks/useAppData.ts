@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase, uploadBase64File } from '../services/supabase';
 import { UserProfile, Flashcard, Folder, SavedStory, QuestType, Quest, Difficulty } from '../types';
+import { notifySuccess } from '../lib/notifications';
 
 const INITIAL_USER: UserProfile = {
     xp: 0, level: 1, streak: 0, lastStudyDate: '', cardsLearned: 0, learningHistory: {}, quests: []
@@ -46,7 +47,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
             const calculatedLevel = Math.floor(newUser.xp / 500) + 1;
             if (calculatedLevel > newUser.level) {
                 newUser.level = calculatedLevel;
-                alert(`🎉 Уровень повышен! Теперь вы уровень ${newUser.level}!`);
+                notifySuccess(`Уровень повышен! Теперь ваш уровень: ${newUser.level}`);
             }
             setUser(newUser);
             if (session && session.user.email !== 'offline@demo.com') {
@@ -194,3 +195,4 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
         loading, fetchData, updateQuestProgress, addCards, saveStoryToDb
     };
 };
+

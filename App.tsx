@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from './services/supabase';
 import { Auth } from './components/Auth';
 import Layout from './components/Layout';
+import NotificationCenter from './components/NotificationCenter';
 import DashboardView from './components/DashboardView';
 import StudyContainer from './components/StudyContainer';
 import Creator from './components/Creator';
@@ -16,6 +16,7 @@ import { useStudyState } from './hooks/useStudyState';
 import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
 import { Flashcard, ViewState } from './types';
+import { getCurrentSession, signOutUser, subscribeAuthState } from './services/repositories/authRepository';
 
 export default function App() {
     const [session, setSession] = useState<Session | null>(null);
@@ -40,8 +41,8 @@ export default function App() {
     } = useStoryState(cards, setView, saveStoryToDb);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+        getCurrentSession().then(currentSession => setSession(currentSession));
+        const subscription = subscribeAuthState(nextSession => setSession(nextSession));
         return () => subscription.unsubscribe();
     }, []);
 
@@ -54,7 +55,7 @@ export default function App() {
     };
 
     const handleLogout = () => {
-        if (session) supabase.auth.signOut();
+        if (session) signOutUser();
         else setOfflineMode(false);
     };
 
@@ -65,12 +66,24 @@ export default function App() {
 
     const dueCount = cards.filter(c => c.nextReviewDate <= Date.now()).length;
 
-    if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><LoaderIcon className="animate-spin w-8 h-8 text-emerald-600" /></div>;
-    if (!session && !offlineMode) return <Auth onLoginSuccess={() => fetchData()} onOfflineMode={handleOfflineMode} />;
+    if (loading) return (
+        <>
+            <NotificationCenter />
+            <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><LoaderIcon className="animate-spin w-8 h-8 text-emerald-600" /></div>
+        </>
+    );
+    if (!session && !offlineMode) return (
+        <>
+            <NotificationCenter />
+            <Auth onLoginSuccess={() => fetchData()} onOfflineMode={handleOfflineMode} />
+        </>
+    );
 
     return (
-        <Layout view={view} setView={setView} user={user} theme={theme} toggleTheme={toggleTheme} onLogout={handleLogout} dueCount={dueCount}>
-            {view === ViewState.Dashboard && (
+        <>
+            <NotificationCenter />
+            <Layout view={view} setView={setView} user={user} theme={theme} toggleTheme={toggleTheme} onLogout={handleLogout} dueCount={dueCount}>
+                {view === ViewState.Dashboard && (
                 <DashboardView
                     session={session} user={user} cards={cards} setCards={setCards} folders={folders} setFolders={setFolders}
                     setView={setView} onStartStudy={handleStartStudy} onShowStudyConfig={() => setShowStudyConfig(true)}
@@ -158,6 +171,7 @@ export default function App() {
                     onStart={handleStartStory}
                 />
             )}
-        </Layout>
+            </Layout>
+        </>
     );
 }

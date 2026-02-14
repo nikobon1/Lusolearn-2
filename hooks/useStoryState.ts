@@ -1,18 +1,10 @@
-// hooks/useStoryState.ts
 import { useState } from 'react';
 import { Flashcard, SavedStory, ViewState } from '../types';
-
-const normalizeFrequency = (freq?: string): string => {
-    if (!freq) return "10000+";
-    if (["Top 500", "Top 1000", "Top 3000", "Top 5000", "10000+"].includes(freq)) return freq;
-    if (freq === "High") return "Top 1000"; 
-    if (freq === "Medium") return "Top 3000";
-    if (freq === "Low") return "10000+";
-    return "10000+"; 
-};
+import { notifyInfo } from '../lib/notifications';
+import { normalizeFrequency } from '../domain/frequency';
 
 export const useStoryState = (
-    cards: Flashcard[], 
+    cards: Flashcard[],
     setView: (v: ViewState) => void,
     saveStoryToDb: (story: { pt: string, ru: string }, audioBase64: string, wordsUsed: string[]) => Promise<void>
 ) => {
@@ -32,15 +24,15 @@ export const useStoryState = (
             pool = pool.filter(c => c.createdAt >= cutoff);
         }
 
-        if (pool.length < config.count) { 
-            alert("Недостаточно слов."); 
-            return; 
+        if (pool.length < config.count) {
+            notifyInfo('Недостаточно слов для генерации истории.');
+            return;
         }
 
         const selected = pool.sort(() => Math.random() - 0.5).slice(0, config.count);
         setStoryCards(selected);
-        setViewingStory(null); 
-        setStoryGenIndex(prev => prev + 1); 
+        setViewingStory(null);
+        setStoryGenIndex(prev => prev + 1);
         setView(ViewState.Story);
         setShowStoryConfig(false);
     };

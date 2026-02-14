@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Flashcard, Difficulty } from '../types';
 import { TrophyIcon, HomeIcon } from './Icons';
-import { supabase } from '../services/supabase';
 import FlashcardView from './FlashcardView';
+import { updateFlashcardSrs } from '../services/repositories/flashcardsRepository';
 
 interface StudyContainerProps {
     cards: Flashcard[];
@@ -43,9 +43,7 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
 
         // Update Database
         if (userId && userId !== 'offline') {
-            supabase.from('flashcards')
-                .update({ interval: newInterval, next_review_date: nextReview })
-                .eq('id', currentCard.id)
+            updateFlashcardSrs(currentCard.id, newInterval, nextReview)
                 .then(({ error }) => {
                     if (error) console.error("Failed to update card SRS:", error);
                 });

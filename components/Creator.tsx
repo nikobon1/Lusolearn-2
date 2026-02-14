@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { LoaderIcon, CameraIcon, PlusIcon, SparklesIcon, BrainIcon } from './Icons';
 import { extractVocabulary, generateCardDetails, getOrGenerateImage } from '../services/geminiService';
 import { Flashcard, Difficulty, VocabularyItem, Folder } from '../types';
+import { notifyError } from '../lib/notifications';
 
 // Use standard UUIDs for database compatibility
 const generateId = () => self.crypto.randomUUID();
@@ -163,7 +164,7 @@ const Creator: React.FC<Props> = ({ onCardsCreated, onCancel, folders, onCreateF
             }
         } catch (error) {
             console.error("Analysis error:", error);
-            alert("Не удалось проанализировать. Попробуйте еще раз.");
+            notifyError('Не удалось проанализировать. Попробуйте еще раз.');
         } finally {
             if (isMounted.current) setIsLoading(false);
         }
@@ -251,7 +252,7 @@ const Creator: React.FC<Props> = ({ onCardsCreated, onCancel, folders, onCreateF
             }
         } catch (error) {
             console.error(error);
-            alert("Ошибка при генерации. Часть карточек могла быть не сохранена.");
+            notifyError('Ошибка при генерации. Часть карточек могла быть не сохранена.');
             if (newCards.length > 0 && isMounted.current) {
                 onCardsCreated(newCards);
             } else if (isMounted.current) {

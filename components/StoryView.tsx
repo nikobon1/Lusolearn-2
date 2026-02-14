@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Flashcard, SavedStory } from '../types';
 import { VolumeIcon, LoaderIcon, BookIcon, PlusIcon, HomeIcon, BookmarkIcon } from './Icons';
 import { generateStoryFromWords, generateAudio, playAudio } from '../services/geminiService';
+import { notifyError, notifySuccess } from '../lib/notifications';
 
 interface Props {
     cards?: Flashcard[]; // For generating new
@@ -42,7 +43,7 @@ const StoryView: React.FC<Props> = ({ cards, initialStory, onBack, onNext, onSav
                 setStory(result);
             } catch (e) {
                 console.error(e);
-                alert("Не удалось создать историю. Попробуйте еще раз.");
+                notifyError('Не удалось создать историю. Попробуйте еще раз.');
             } finally {
                 setLoading(false);
             }
@@ -82,9 +83,10 @@ const StoryView: React.FC<Props> = ({ cards, initialStory, onBack, onNext, onSav
             }
             await onSave(story, audioToSave!);
             setIsSaved(true);
+            notifySuccess('История сохранена');
         } catch (e) {
             console.error(e);
-            alert("Ошибка при сохранении");
+            notifyError('Ошибка при сохранении истории');
         } finally {
             setIsSaving(false);
         }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { supabase } from '../services/supabase';
 import { LoaderIcon, GoogleIcon } from './Icons';
+import { notifyInfo, notifySuccess } from '../lib/notifications';
+import { signInWithEmail, signInWithGoogle, signUpWithEmail } from '../services/repositories/authRepository';
 
 interface Props {
     onLoginSuccess: () => void;
@@ -21,46 +22,36 @@ export const Auth: React.FC<Props> = ({ onLoginSuccess, onOfflineMode }) => {
 
         try {
             if (mode === 'signup') {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                alert('Регистрация успешна! Проверьте почту для подтверждения (если включено) или войдите.');
+                const { error: signUpError } = await signUpWithEmail(email, password);
+                if (signUpError) throw signUpError;
+                notifySuccess('Регистрация успешна. Проверьте почту и выполните вход.');
                 setMode('login');
             } else {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (error) throw error;
+                const { error: signInError } = await signInWithEmail(email, password);
+                if (signInError) throw signInError;
                 onLoginSuccess();
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Ошибка авторизации';
+            setError(message);
         } finally {
             setLoading(false);
         }
     };
 
     const handleGoogleLogin = async () => {
-        // Warning for preview environments
         if (window.location.hostname.includes('googleusercontent') || window.location.hostname.includes('webcontainer')) {
-             alert("Внимание: Вход через Google не работает в режиме Preview (AI Studio), так как у этого окна динамический домен. \n\nПожалуйста, используйте кнопку 'Тестовый режим (Оффлайн)' для проверки приложения.");
-             return;
+            notifyInfo("Вход через Google не работает в Preview. Используйте 'Тестовый режим (Оффлайн)'.", 4500);
+            return;
         }
 
         setLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.origin,
-                },
-            });
-            if (error) throw error;
-        } catch (err: any) {
-            setError(err.message);
+            const { error: oauthError } = await signInWithGoogle(window.location.origin);
+            if (oauthError) throw oauthError;
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Ошибка входа через Google';
+            setError(message);
             setLoading(false);
         }
     };
@@ -73,17 +64,16 @@ export const Auth: React.FC<Props> = ({ onLoginSuccess, onOfflineMode }) => {
                     <p className="text-slate-500 dark:text-slate-400">Войдите для синхронизации</p>
                 </div>
 
-                {/* Primary Button for Preview Users */}
                 <div className="mb-6 pb-6 border-b border-slate-100 dark:border-slate-700">
-                     <button 
+                    <button
                         onClick={onOfflineMode}
                         className="w-full py-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold rounded-xl border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all flex justify-center items-center gap-2"
-                     >
-                         🚀 Тестовый режим (Оффлайн)
-                     </button>
-                     <p className="text-center text-[10px] text-slate-400 dark:text-slate-500 mt-2">
-                         Используйте этот режим для просмотра в AI Studio Preview
-                     </p>
+                    >
+                        Тестовый режим (Оффлайн)
+                    </button>
+                    <p className="text-center text-[10px] text-slate-400 dark:text-slate-500 mt-2">
+                        Используйте этот режим для просмотра в AI Studio Preview
+                    </p>
                 </div>
 
                 <div className="space-y-4">
@@ -154,3 +144,4 @@ export const Auth: React.FC<Props> = ({ onLoginSuccess, onOfflineMode }) => {
         </div>
     );
 };
+

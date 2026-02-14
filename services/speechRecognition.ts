@@ -1,4 +1,5 @@
 // Speech Recognition Service using Google Cloud Speech-to-Text API
+import { env } from '../config/env';
 
 export interface TranscriptionResult {
     transcript: string;
@@ -123,9 +124,7 @@ export function comparePronunciation(expected: string, heard: string): Pronuncia
 
 // Transcribe audio using Google Cloud Speech-to-Text API
 export async function transcribeAudio(audioBlob: Blob): Promise<TranscriptionResult> {
-    const apiKey = (import.meta as any).env?.VITE_GOOGLE_CLOUD_API_KEY ||
-        (import.meta as any).env?.GOOGLE_CLOUD_API_KEY ||
-        process.env.GOOGLE_CLOUD_API_KEY;
+    const apiKey = env.googleCloudApiKey;
 
     if (!apiKey) {
         throw new Error("Google Cloud API Key not found. Add VITE_GOOGLE_CLOUD_API_KEY to .env.local");
