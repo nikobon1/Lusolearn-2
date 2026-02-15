@@ -1,5 +1,5 @@
-import { Type, GenerateContentResponse } from "@google/genai";
-import { getAIClient, callWithRetry } from "./client";
+import { Type } from "@google/genai";
+import { generateContent, callWithRetry } from "./client";
 import { VocabularyItem, AICardDetails, Example } from "../types";
 
 export interface VocabularyExtractionResult {
@@ -12,8 +12,6 @@ export const extractVocabulary = async (
     mode: 'text' | 'image',
     count: number = 5
 ): Promise<VocabularyExtractionResult> => {
-    const ai = getAIClient();
-
     const extractionSchema = {
         type: Type.OBJECT,
         properties: {
@@ -63,7 +61,7 @@ export const extractVocabulary = async (
         };
     }
 
-    const response = await callWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
+    const response = await callWithRetry(() => generateContent({
         model: "gemini-2.5-flash",
         contents: contents as any,
         config: {
@@ -83,8 +81,6 @@ export const extractVocabulary = async (
 };
 
 export const generateCardDetails = async (word: string): Promise<AICardDetails> => {
-    const ai = getAIClient();
-
     const verbFormsSchema = {
         type: Type.OBJECT,
         properties: {
@@ -162,12 +158,17 @@ export const generateCardDetails = async (word: string): Promise<AICardDetails> 
        The prompt should describe a concrete scene or object that represents the word's meaning.
        Style: Modern digital art, warm colors, soft lighting, educational flashcard style.
        Example for "o pão": "A freshly baked loaf of bread on a wooden cutting board, with steam rising, warm kitchen background"
+    3a. The visual prompt must be in English and contain one concrete real-life scene with a clear main subject.
+    3b. Use realistic photography style details: natural lighting, real textures, natural proportions, and believable environment.
+    3c. For abstract words, show an everyday human situation that clearly demonstrates the concept.
+    3d. Explicitly avoid: abstract art, symbolism, surrealism, icon style, flat vector style, watercolor style.
+    3e. Always append: "no text, no letters, no logos".
     4. Grammar notes in Russian.
     5. Frequency rank estimate.
     6. Conjugation if verb (Present, Perf, Imperf, Future).
   `;
 
-    const response = await callWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
+    const response = await callWithRetry(() => generateContent({
         model: "gemini-2.5-flash",
         contents: { parts: [{ text: `Generate details for "${word}"` }] } as any,
         config: {
@@ -183,7 +184,6 @@ export const generateCardDetails = async (word: string): Promise<AICardDetails> 
 };
 
 export const enrichCardPatterns = async (originalTerm: string, examples: Example[]): Promise<Example[]> => {
-    const ai = getAIClient();
     const schema = {
         type: Type.ARRAY,
         items: {
@@ -210,7 +210,7 @@ export const enrichCardPatterns = async (originalTerm: string, examples: Example
     ВАЖНО: Объяснения (explanation) ОБЯЗАТЕЛЬНО на РУССКОМ языке. 
     target - это португальское слово/фраза из предложения.
     explanation - объяснение грамматического правила НА РУССКОМ.`;
-    const response = await callWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
+    const response = await callWithRetry(() => generateContent({
         model: "gemini-2.5-flash",
         contents: { parts: [{ text: `${prompt}\n${JSON.stringify(examples)}` }] } as any,
         config: { responseMimeType: "application/json", responseSchema: schema }

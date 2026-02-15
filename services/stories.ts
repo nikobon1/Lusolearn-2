@@ -1,8 +1,7 @@
-import { Type, GenerateContentResponse } from "@google/genai";
-import { getAIClient, callWithRetry } from "./client";
+import { Type } from "@google/genai";
+import { generateContent, callWithRetry } from "./client";
 
 export const generateStoryFromWords = async (words: string[]): Promise<{ pt: string, ru: string, audioBase64?: string }> => {
-    const ai = getAIClient();
     const schema = {
         type: Type.OBJECT,
         properties: {
@@ -17,7 +16,7 @@ export const generateStoryFromWords = async (words: string[]): Promise<{ pt: str
         1-3 sentences. Return PT text and RU translation.
     `;
 
-    const response = await callWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
+    const response = await callWithRetry(() => generateContent({
         model: "gemini-2.5-flash",
         contents: { parts: [{ text: prompt }] } as any,
         config: { responseMimeType: "application/json", responseSchema: schema }

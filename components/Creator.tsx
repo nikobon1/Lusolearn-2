@@ -215,7 +215,7 @@ const Creator: React.FC<Props> = ({ onCardsCreated, onCancel, folders, onCreateF
                 // Image Logic using Gemini (with Global Cache)
                 let finalImageUrl = undefined;
                 if (details.visualPrompt) {
-                    const styleSuffix = ", minimalist flat vector art, simple illustration, white background, high contrast, clean lines, no text";
+                    const styleSuffix = ", photorealistic educational flashcard image, single clear main subject, real-world scene, natural colors, natural lighting, realistic textures, clean background, no text, no letters, no logos, no abstract art, no symbolism, no surreal elements, no flat vector style";
                     const fullPrompt = details.visualPrompt + styleSuffix;
                     try {
                         // Use smart function that checks cache

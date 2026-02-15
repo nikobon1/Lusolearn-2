@@ -1,5 +1,4 @@
-import { Modality, GenerateContentResponse } from "@google/genai";
-import { getAIClient, callWithRetry } from "./client";
+import { generateContent, callWithRetry } from "./client";
 import { findGlobalAudio, saveGlobalAudio } from "./supabase";
 import { prefixedHash } from "../lib/hash";
 
@@ -231,16 +230,14 @@ export const getOrGenerateAudio = async (text: string, cachedSource?: string): P
 };
 
 export const generateAudio = async (text: string, mode: 'card' | 'story' = 'card'): Promise<string> => {
-    const ai = getAIClient();
-
     // Prepend language instruction for European Portuguese accent
     const ptPTInstruction = "[Speak in European Portuguese (pt-PT), with a Lisbon accent. Do NOT use Brazilian Portuguese.] ";
     const textWithInstruction = ptPTInstruction + text;
 
-    console.log(`[Gemini TTS] 🎙️ Generating audio for: "${text.substring(0, 30)}..."`);
+    console.log(`[Gemini TTS] Generating audio for: "${text.substring(0, 30)}..."`);
 
     try {
-        const response = await callWithRetry(() => ai.models.generateContent({
+        const response = await callWithRetry(() => generateContent({
             model: "gemini-2.5-flash-preview-tts",
             contents: { parts: [{ text: textWithInstruction }] },
             config: {
@@ -255,18 +252,14 @@ export const generateAudio = async (text: string, mode: 'card' | 'story' = 'card
             }
         }));
 
-        if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
-            for (const part of response.candidates[0].content.parts) {
-                if (part.inlineData && part.inlineData.data) {
-                    console.log(`[Gemini TTS] ✅ Audio generated successfully`);
-                    return part.inlineData.data;
-                }
-            }
+        if (response.inlineData?.data) {
+            console.log('[Gemini TTS] Audio generated successfully');
+            return response.inlineData.data;
         }
 
         throw new Error("No audio generated");
     } catch (error) {
-        console.error(`[Gemini TTS] ❌ Error:`, error);
+        console.error('[Gemini TTS] Error:', error);
         throw error;
     }
 };

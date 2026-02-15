@@ -1,15 +1,34 @@
-import { GoogleGenAI } from "@google/genai";
-import { env } from "../config/env";
 import { logger } from "../lib/logger";
 
-export const getAIClient = () => {
-    if (!env.geminiApiKey) {
-        throw new Error("[env] Missing Gemini API key. Set VITE_GEMINI_API_KEY.");
+export interface GeminiGenerateRequest {
+    model: string;
+    contents: unknown;
+    config?: unknown;
+}
+
+export interface GeminiGenerateResponse {
+    text?: string | null;
+    inlineData?: { mimeType?: string; data: string } | null;
+}
+
+export const generateContent = async (request: GeminiGenerateRequest): Promise<GeminiGenerateResponse> => {
+    const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+    });
+
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        const message = payload?.error || `Gemini proxy error (${response.status})`;
+        const error = new Error(message) as Error & { status?: number; code?: number };
+        error.status = response.status;
+        throw error;
     }
-    return new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+    return payload as GeminiGenerateResponse;
 };
 
-// Retry Logic for Rate Limiting (429)
 export async function callWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
     try {
         return await fn();
@@ -31,3 +50,4 @@ export async function callWithRetry<T>(fn: () => Promise<T>, retries = 3, delay 
         throw error;
     }
 }
+

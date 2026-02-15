@@ -1,7 +1,7 @@
 // Re-export all services for backward compatibility
 // Components can import from './services/geminiService' or './services' 
 
-export { getAIClient, callWithRetry } from './client';
+export { generateContent, callWithRetry } from './client';
 export { loadAudio, playAudio, preloadAudio, getOrGenerateAudio, generateAudio } from './audio';
 export { generateImage, getOrGenerateImage, regenerateMissingImages } from './images';
 export { extractVocabulary, generateCardDetails, enrichCardPatterns } from './vocabulary';

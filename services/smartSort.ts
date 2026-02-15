@@ -1,5 +1,5 @@
-import { Type, GenerateContentResponse } from "@google/genai";
-import { getAIClient, callWithRetry } from "./client";
+import { Type } from "@google/genai";
+import { generateContent, callWithRetry } from "./client";
 import { Flashcard, Folder } from "../types";
 
 export interface SmartSortSuggestion {
@@ -10,7 +10,6 @@ export interface SmartSortSuggestion {
 }
 
 export const suggestSmartSorting = async (cards: Flashcard[], folders: Folder[]): Promise<SmartSortSuggestion[]> => {
-    const ai = getAIClient();
     const cardSimplified = cards.map(c => ({ id: c.id, term: c.originalTerm }));
     const folderSimplified = folders.map(f => ({ id: f.id, name: f.name })).filter(f => f.id !== 'default');
 
@@ -32,7 +31,7 @@ export const suggestSmartSorting = async (cards: Flashcard[], folders: Folder[])
 
     const prompt = `Sort these cards into folders. Create new folders (in Russian) if needed for clusters > 1 card.`;
 
-    const response = await callWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
+    const response = await callWithRetry(() => generateContent({
         model: "gemini-2.5-flash",
         contents: { parts: [{ text: `${prompt}\nFolders: ${JSON.stringify(folderSimplified)}\nCards: ${JSON.stringify(cardSimplified)}` }] } as any,
         config: { responseMimeType: "application/json", responseSchema: schema }

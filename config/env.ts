@@ -14,16 +14,7 @@ const readEnv = (...keys: string[]): string | undefined => {
     return undefined;
 };
 
-const required = (label: string, ...keys: string[]): string => {
-    const value = readEnv(...keys);
-    if (!value) {
-        throw new Error(`[env] Missing ${label}. Add one of: ${keys.join(', ')}`);
-    }
-    return value;
-};
-
 export const env = {
-    geminiApiKey: readEnv('VITE_GEMINI_API_KEY', 'GEMINI_API_KEY', 'VITE_API_KEY', 'API_KEY'),
     supabaseUrl: readEnv('VITE_SUPABASE_URL', 'REACT_APP_SUPABASE_URL') || 'https://qhyvcrwucjxsgylzmsdu.supabase.co',
     supabaseAnonKey: readEnv('VITE_SUPABASE_ANON_KEY', 'REACT_APP_SUPABASE_ANON_KEY') || 'sb_publishable_jlBgHpcHex4zHiuVBGiRvQ_sxijqujW',
     googleCloudApiKey: readEnv('VITE_GOOGLE_CLOUD_API_KEY', 'GOOGLE_CLOUD_API_KEY'),

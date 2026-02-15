@@ -1,5 +1,4 @@
-import { GenerateContentResponse } from "@google/genai";
-import { getAIClient, callWithRetry } from "./client";
+import { generateContent, callWithRetry } from "./client";
 import { findGlobalImage, saveGlobalImage } from "./supabase";
 import { supabase } from "./supabase";
 
@@ -30,19 +29,13 @@ export const getOrGenerateImage = async (prompt: string, word: string): Promise<
 };
 
 export const generateImage = async (prompt: string): Promise<string> => {
-    const ai = getAIClient();
-
-    const response = await callWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
+    const response = await callWithRetry(() => generateContent({
         model: "gemini-2.5-flash-image",
         contents: { parts: [{ text: prompt }] },
     }));
 
-    if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData && part.inlineData.data) {
-                return part.inlineData.data;
-            }
-        }
+    if (response.inlineData?.data) {
+        return response.inlineData.data;
     }
 
     throw new Error("No image generated");
@@ -62,7 +55,7 @@ export const regenerateMissingImages = async (
         onProgress(i + 1, cardsWithoutImages.length, card.originalTerm);
 
         try {
-            const prompt = `A realistic, life-like illustration of "${card.originalTerm}" (${card.translation}). Show a concrete scene or object that represents this word. Style: Modern digital art, warm colors, soft lighting, educational flashcard style. No text or letters in the image.`;
+            const prompt = `A photorealistic educational flashcard image for "${card.originalTerm}" (${card.translation}). Show one concrete real-world scene or object with a single clear main subject, realistic textures, natural proportions, and natural lighting. If the word is abstract, show an everyday human situation that clearly demonstrates it. No abstract art, no symbolism, no surreal elements, no flat vector style, no watercolor style, no text, no letters, no logos.`;
             const imageUrl = await getOrGenerateImage(prompt, card.originalTerm);
 
             // Update in database
