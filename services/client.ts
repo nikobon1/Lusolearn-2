@@ -3,6 +3,9 @@ import { env } from "../config/env";
 import { logger } from "../lib/logger";
 
 export const getAIClient = () => {
+    if (!env.geminiApiKey) {
+        throw new Error("[env] Missing Gemini API key. Set VITE_GEMINI_API_KEY.");
+    }
     return new GoogleGenAI({ apiKey: env.geminiApiKey });
 };
 
