@@ -1,6 +1,7 @@
 import { generateContent, callWithRetry } from "./client";
 import { findGlobalAudio, saveGlobalAudio } from "./supabase";
 import { prefixedHash } from "../lib/hash";
+import { env } from "../config/env";
 
 // --- Audio System ---
 
@@ -177,14 +178,16 @@ export const loadAudio = async (text: string, source?: string): Promise<AudioBuf
 export const playAudio = async (textOrSource: string, rate: number = 1.0) => {
     console.log(`🔊🔊🔊 [NEW AUDIO CODE] playAudio called! Text: "${textOrSource.substring(0, 30)}...", Rate: ${rate}`);
 
-    // Determine if input is base64 or plain text
-    // Base64 audio is typically very long (>500 chars) and doesn't contain spaces
-    const isBase64 = textOrSource.length > 500 && !textOrSource.includes(' ') && !textOrSource.startsWith('http');
+    // Determine if input is URL, base64, or plain text.
+    const isUrl = /^https?:\/\//i.test(textOrSource);
+    // Base64 audio is typically very long (>500 chars) and doesn't contain spaces.
+    const isBase64 = textOrSource.length > 500 && !textOrSource.includes(' ') && !isUrl;
 
-    // For regular text (sentences, words) - use text directly as key
-    // For base64 - use hash as key to prevent memory issues
-    const key = isBase64 ? prefixedHash(textOrSource, 'h') : textOrSource;
-    const source = isBase64 ? textOrSource : undefined;
+    // For regular text use text directly as key.
+    // For direct audio sources (base64/URL) use hash as key to avoid huge cache keys.
+    const isDirectSource = isBase64 || isUrl;
+    const key = isDirectSource ? prefixedHash(textOrSource, 'h') : textOrSource;
+    const source = isDirectSource ? textOrSource : undefined;
 
     try {
         const ctx = getAudioContext();
@@ -238,7 +241,7 @@ export const generateAudio = async (text: string, mode: 'card' | 'story' = 'card
 
     try {
         const response = await callWithRetry(() => generateContent({
-            model: "gemini-2.5-flash-preview-tts",
+            model: env.geminiTtsModel,
             contents: { parts: [{ text: textWithInstruction }] },
             config: {
                 responseModalities: ["AUDIO"],
