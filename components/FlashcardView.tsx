@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Flashcard, Example, Pattern } from '../types';
 import { VolumeIcon, BookIcon, BrainIcon, XIcon, HomeIcon, GridIcon, LoaderIcon, MicIcon } from './Icons';
-import { playAudio, loadAudio, getOrGenerateAudio, preloadAudio } from '../services/geminiService';
+import { playAudio, loadAudio, getOrGenerateAudio, preloadAudio, translateExplanationToRussian } from '../services/geminiService';
 import { useSpeechRecording } from '../hooks/useSpeechRecording';
 
 interface Props {
@@ -16,6 +16,7 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
     // Track which audio source is currently active: 'main' | 'example' | null
     const [playingTarget, setPlayingTarget] = useState<'main' | 'example' | null>(null);
     const [selectedPattern, setSelectedPattern] = useState<Pattern | null>(null);
+    const [selectedPatternExplanation, setSelectedPatternExplanation] = useState<string>('');
 
     // Restored Features State
     const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
@@ -44,6 +45,7 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
     useEffect(() => {
         setIsFlipped(false);
         setSelectedPattern(null);
+        setSelectedPatternExplanation('');
         setPlaybackSpeed(1.0);
         setActiveLevel('A1');
         setShowConjugation(false);
@@ -51,6 +53,30 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
         setShowPronunciationMode(false);
         speech.reset();
     }, [card.id]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const localizePatternExplanation = async () => {
+            if (!selectedPattern) {
+                setSelectedPatternExplanation('');
+                return;
+            }
+
+            const original = selectedPattern.explanation || '';
+            setSelectedPatternExplanation(original);
+
+            try {
+                const ru = await translateExplanationToRussian(original);
+                if (!cancelled && ru) setSelectedPatternExplanation(ru);
+            } catch {
+                if (!cancelled) setSelectedPatternExplanation(original);
+            }
+        };
+
+        localizePatternExplanation();
+        return () => { cancelled = true; };
+    }, [selectedPattern]);
 
     const processAudioPlayback = async (target: 'main' | 'example', text: string, source?: string) => {
         if (playingTarget) return; // Prevent overlapping playback
@@ -330,7 +356,7 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
                             <h4 className="font-bold text-indigo-700 dark:text-indigo-300 text-xl">{selectedPattern.target}</h4>
                             <button onClick={() => setSelectedPattern(null)} className="p-1 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400"><XIcon className="w-5 h-5" /></button>
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-base">{selectedPattern.explanation}</p>
+                        <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-base">{selectedPatternExplanation || selectedPattern.explanation}</p>
                     </div>
                 </div>
             )}

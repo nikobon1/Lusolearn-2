@@ -7,6 +7,67 @@ export interface VocabularyExtractionResult {
     suggestedFolder: string;
 }
 
+const hasCyrillic = (text: string): boolean => /[А-Яа-яЁё]/.test(text);
+
+export const translateExplanationToRussian = async (text: string): Promise<string> => {
+    const trimmed = (text || '').trim();
+    if (!trimmed || hasCyrillic(trimmed)) return trimmed;
+
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+            ru: { type: Type.STRING }
+        },
+        required: ["ru"]
+    };
+
+    const response = await callWithRetry(() => generateContent({
+        model: "gemini-2.5-flash",
+        contents: {
+            parts: [{
+                text: `Translate this grammar explanation into Russian.
+Return JSON only.
+Keep the meaning exact and concise (1-2 short sentences).
+Text: ${JSON.stringify(trimmed)}`
+            }]
+        } as any,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: schema,
+        }
+    }));
+
+    const payload = response.text ? JSON.parse(response.text) as { ru?: string } : null;
+    return payload?.ru?.trim() || trimmed;
+};
+
+const enforceRussianPatternExplanations = async (examples: Example[]): Promise<Example[]> => {
+    const toTranslate: { exIndex: number; patternIndex: number; text: string }[] = [];
+
+    examples.forEach((ex, exIndex) => {
+        ex.patterns?.forEach((pattern, patternIndex) => {
+            const explanation = (pattern.explanation || '').trim();
+            if (!explanation) return;
+            if (hasCyrillic(explanation)) return;
+            toTranslate.push({ exIndex, patternIndex, text: explanation });
+        });
+    });
+
+    if (toTranslate.length === 0) return examples;
+
+    const translated = await Promise.all(toTranslate.map(item => translateExplanationToRussian(item.text)));
+
+    return examples.map((ex, exIndex) => ({
+        ...ex,
+        patterns: ex.patterns?.map((pattern, patternIndex) => {
+            const translationIdx = toTranslate.findIndex(x => x.exIndex === exIndex && x.patternIndex === patternIndex);
+            if (translationIdx === -1) return pattern;
+            const ruText = translated[translationIdx];
+            return ruText ? { ...pattern, explanation: ruText } : pattern;
+        })
+    }));
+};
+
 export const extractVocabulary = async (
     input: string | { imageBase64: string; mimeType: string },
     mode: 'text' | 'image',
@@ -180,7 +241,9 @@ export const generateCardDetails = async (word: string): Promise<AICardDetails> 
 
     const text = response.text;
     if (!text) throw new Error("No details generated");
-    return JSON.parse(text) as AICardDetails;
+    const parsed = JSON.parse(text) as AICardDetails;
+    parsed.examples = await enforceRussianPatternExplanations(parsed.examples || []);
+    return parsed;
 };
 
 export const enrichCardPatterns = async (originalTerm: string, examples: Example[]): Promise<Example[]> => {
@@ -219,8 +282,9 @@ export const enrichCardPatterns = async (originalTerm: string, examples: Example
     const text = response.text;
     if (!text) return examples;
     const result = JSON.parse(text) as { level: string, patterns: any[] }[];
-    return examples.map(ex => {
+    const enrichedExamples = examples.map(ex => {
         const enriched = result.find(r => r.level === ex.level);
         return enriched ? { ...ex, patterns: enriched.patterns } : ex;
     });
+    return enforceRussianPatternExplanations(enrichedExamples);
 };
