@@ -6,7 +6,7 @@ import { useSpeechRecording } from '../hooks/useSpeechRecording';
 
 interface Props {
     card: Flashcard;
-    onResult: (success: boolean) => void;
+    onResult: (rating: 'again' | 'hard' | 'good' | 'easy') => void;
     onBack: () => void;
     onUpdate: (card: Flashcard) => void;
 }
@@ -320,20 +320,32 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
                                 </div>
                             )}
 
-                            <div className="h-20"></div> {/* Bottom Spacer for buttons */}
+                            <div className="h-32"></div> {/* Bottom Spacer for buttons */}
                         </div>
 
                         {/* ACTION BUTTONS (Only on Back) */}
-                        <div className="absolute bottom-0 left-0 w-full p-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur border-t border-slate-100 dark:border-slate-700 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                        <div className="absolute bottom-0 left-0 w-full p-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur border-t border-slate-100 dark:border-slate-700 grid grid-cols-2 gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                             <button
-                                onClick={() => onResult(false)}
-                                className="flex-1 py-4 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 font-bold rounded-2xl hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors text-lg border border-rose-100 dark:border-rose-800/50"
+                                onClick={() => onResult('again')}
+                                className="py-3.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 font-bold rounded-2xl hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors border border-rose-100 dark:border-rose-800/50"
                             >
                                 Учить
                             </button>
                             <button
-                                onClick={() => onResult(true)}
-                                className="flex-1 py-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 font-bold rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors text-lg border border-emerald-100 dark:border-emerald-800/50"
+                                onClick={() => onResult('hard')}
+                                className="py-3.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold rounded-2xl hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors border border-amber-100 dark:border-amber-800/50"
+                            >
+                                Трудно
+                            </button>
+                            <button
+                                onClick={() => onResult('good')}
+                                className="py-3.5 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600"
+                            >
+                                Нормально
+                            </button>
+                            <button
+                                onClick={() => onResult('easy')}
+                                className="py-3.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 font-bold rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors border border-emerald-100 dark:border-emerald-800/50"
                             >
                                 Запомнил
                             </button>

@@ -1,9 +1,21 @@
+import { Difficulty } from '../../types';
 import { supabase } from '../supabase';
 
-export const updateFlashcardSrs = async (cardId: string, interval: number, nextReviewDate: number) => {
+export const updateFlashcardSrs = async (
+    cardId: string,
+    interval: number,
+    nextReviewDate: number,
+    easeFactor: number,
+    difficulty: Difficulty
+) => {
     return supabase
         .from('flashcards')
-        .update({ interval, next_review_date: nextReviewDate })
+        .update({
+            interval,
+            next_review_date: nextReviewDate,
+            ease_factor: easeFactor,
+            difficulty,
+        })
         .eq('id', cardId);
 };
 

@@ -82,7 +82,16 @@ export default function App() {
     return (
         <>
             <NotificationCenter />
-            <Layout view={view} setView={setView} user={user} theme={theme} toggleTheme={toggleTheme} onLogout={handleLogout} dueCount={dueCount}>
+            <Layout
+                view={view}
+                setView={setView}
+                user={user}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                onLogout={handleLogout}
+                onOpenStudy={() => handleStartStudy('srs', new Set())}
+                dueCount={dueCount}
+            >
                 {view === ViewState.Dashboard && (
                 <DashboardView
                     session={session} user={user} cards={cards} setCards={setCards} folders={folders} setFolders={setFolders}

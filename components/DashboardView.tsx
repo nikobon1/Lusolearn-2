@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Flashcard, UserProfile, Folder, ViewState } from '../types';
 import { suggestSmartSorting, SmartSortSuggestion } from '../services/geminiService';
@@ -14,7 +14,7 @@ import {
     FolderIcon, EditIcon, SunIcon, MoonIcon,
     LoaderIcon, SparklesIcon, ClockIcon,
     SortAlphaIcon, ChartIcon, BookIcon, BrainIcon,
-    PlusIcon, XIcon
+    PlusIcon, SearchIcon, ShuffleIcon, XIcon
 } from './Icons';
 
 interface DashboardProps {
@@ -42,8 +42,12 @@ const DashboardView: React.FC<DashboardProps> = ({
     const [activeFolderId, setActiveFolderId] = useState<string>('all');
     const [showNewFolderInput, setShowNewFolderInput] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'due' | 'new' | 'learned'>('all');
+    const [cardSortMode, setCardSortMode] = useState<'newest' | 'oldest' | 'alpha' | 'due'>('newest');
     const [isShuffled, setIsShuffled] = useState(false);
     const [shuffleSeed, setShuffleSeed] = useState(0);
+    const [visibleCount, setVisibleCount] = useState(Number.MAX_SAFE_INTEGER);
     const [folderSortMode, setFolderSortMode] = useState<'date' | 'alpha'>('date');
     const [isEditingFolders, setIsEditingFolders] = useState(false);
     const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
@@ -62,15 +66,60 @@ const DashboardView: React.FC<DashboardProps> = ({
 
     // Derived State
     const filteredCards = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
         let filtered = cards.filter(c => {
             if (activeFolderId === 'all') return true;
             if (activeFolderId === 'default') return c.folderIds.length === 0 || c.folderIds.includes('default');
             return c.folderIds.includes(activeFolderId);
         });
-        if (isShuffled) filtered.sort((a, b) => simpleHash(a.id + shuffleSeed) - simpleHash(b.id + shuffleSeed));
-        else filtered.sort((a, b) => b.createdAt - a.createdAt);
-        return filtered;
-    }, [cards, activeFolderId, isShuffled, shuffleSeed]);
+
+        if (query) {
+            filtered = filtered.filter(card => {
+                const searchableText = [
+                    card.originalTerm,
+                    card.translation,
+                    card.definition,
+                    ...(card.tags || []),
+                    ...(card.examples || []).map(example => example.sentence),
+                ]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+
+                return searchableText.includes(query);
+            });
+        }
+
+        if (statusFilter === 'due') {
+            filtered = filtered.filter(card => card.interval > 0 && card.nextReviewDate <= Date.now());
+        } else if (statusFilter === 'new') {
+            filtered = filtered.filter(card => card.interval === 0);
+        } else if (statusFilter === 'learned') {
+            filtered = filtered.filter(card => card.interval > 0);
+        }
+
+        const sorted = [...filtered];
+        if (isShuffled) {
+            sorted.sort((a, b) => simpleHash(a.id + shuffleSeed) - simpleHash(b.id + shuffleSeed));
+            return sorted;
+        }
+
+        if (cardSortMode === 'oldest') {
+            sorted.sort((a, b) => a.createdAt - b.createdAt);
+        } else if (cardSortMode === 'alpha') {
+            sorted.sort((a, b) => a.originalTerm.localeCompare(b.originalTerm, 'pt'));
+        } else if (cardSortMode === 'due') {
+            sorted.sort((a, b) => a.nextReviewDate - b.nextReviewDate);
+        } else {
+            sorted.sort((a, b) => b.createdAt - a.createdAt);
+        }
+
+        return sorted;
+    }, [cards, activeFolderId, searchQuery, statusFilter, cardSortMode, isShuffled, shuffleSeed]);
+
+    useEffect(() => {
+        setVisibleCount(Number.MAX_SAFE_INTEGER);
+    }, [activeFolderId, searchQuery, statusFilter, cardSortMode, isShuffled]);
 
     const sortedFolders = useMemo(() => {
         const others = [...folders];
@@ -80,6 +129,11 @@ const DashboardView: React.FC<DashboardProps> = ({
     }, [folders, folderSortMode]);
 
     const dueCount = cards.filter(c => c.nextReviewDate <= Date.now()).length;
+    const dueReviewCount = cards.filter(c => c.interval > 0 && c.nextReviewDate <= Date.now()).length;
+    const newCardsCount = cards.filter(c => c.interval === 0).length;
+    const learnedCardsCount = cards.filter(c => c.interval > 0).length;
+    const visibleCards = filteredCards.slice(0, visibleCount);
+    const hasMoreCards = visibleCount < filteredCards.length;
 
     // Folder Handlers
     const handleCreateFolder = async () => {
@@ -342,8 +396,12 @@ const DashboardView: React.FC<DashboardProps> = ({
                                     {activeFolderId !== 'all' && <span className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded">{activeFolderId === 'default' ? 'Без категории' : folders.find(f => f.id === activeFolderId)?.name}</span>}
                                 </h3>
                                 <div className="flex gap-2">
-                                    <button onClick={() => { setShuffleSeed(Date.now()); setIsShuffled(!isShuffled); }} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">
-                                        <SortAlphaIcon className="w-4 h-4" />
+                                    <button
+                                        onClick={() => { setShuffleSeed(Date.now()); setIsShuffled(prev => !prev); }}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isShuffled ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                                        title="Перемешать карточки"
+                                    >
+                                        <ShuffleIcon className="w-4 h-4" />
                                     </button>
                                     {/* Regenerate missing images button */}
                                     <button
@@ -372,9 +430,46 @@ const DashboardView: React.FC<DashboardProps> = ({
                                 </div>
                             </div>
 
+                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 space-y-3">
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                                    <label className="relative flex-1">
+                                        <SearchIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <input
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            placeholder="Поиск по слову, переводу, тегу или примеру"
+                                            className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 py-2.5 pl-10 pr-3 text-sm text-slate-700 dark:text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/40"
+                                        />
+                                    </label>
+
+                                    <select
+                                        value={cardSortMode}
+                                        onChange={e => { setCardSortMode(e.target.value as 'newest' | 'oldest' | 'alpha' | 'due'); setIsShuffled(false); }}
+                                        className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/40"
+                                    >
+                                        <option value="newest">Сначала новые</option>
+                                        <option value="oldest">Сначала старые</option>
+                                        <option value="alpha">По алфавиту</option>
+                                        <option value="due">По дате повтора</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                    <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'all' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>Все ({filteredCards.length})</button>
+                                    <button onClick={() => setStatusFilter('due')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'due' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>К повторению ({dueReviewCount})</button>
+                                    <button onClick={() => setStatusFilter('new')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'new' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>Новые ({newCardsCount})</button>
+                                    <button onClick={() => setStatusFilter('learned')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'learned' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>Выученные ({learnedCardsCount})</button>
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+                                    <span>Показано {Math.min(visibleCount, filteredCards.length)} из {filteredCards.length}</span>
+                                    {isShuffled && <span>Случайный порядок</span>}
+                                </div>
+                            </div>
+
                             <div className="p-4 overflow-y-auto flex-1">
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    {filteredCards.slice(0, 50).map(card => (
+                                    {visibleCards.map(card => (
                                         <div key={card.id} onClick={() => onStudySingleCard(card.id)} className="flex flex-col p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800 transition-all relative cursor-pointer group">
                                             <div className="flex items-start gap-3 mb-2">
                                                 <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex-shrink-0 overflow-hidden">
