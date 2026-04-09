@@ -25,7 +25,7 @@ export default function App() {
 
     const {
         user, cards, setCards, folders, setFolders, savedStories, setSavedStories,
-        loading, fetchData, updateQuestProgress, addCards, saveStoryToDb
+        loading, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
     } = useAppData(session, offlineMode);
 
     const { theme, toggleTheme } = useTheme();
@@ -106,7 +106,7 @@ export default function App() {
                         cards={studyQueue}
                         onComplete={() => setView(ViewState.Dashboard)}
                         onUpdateCard={(updated) => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
-                        onProgress={(amount) => updateQuestProgress('review_cards', amount)}
+                        onProgress={recordReviewProgress}
                         userId={session?.user.id}
                     />
                 </div>

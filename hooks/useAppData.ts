@@ -16,6 +16,62 @@ const generateDailyQuests = (): Quest[] => {
     ];
 };
 
+const getTodayKey = () => new Date().toISOString().split('T')[0];
+
+const getYesterdayKey = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+};
+
+const getCardsLearnedTotal = (history: Record<string, number> = {}) =>
+    Object.values(history).reduce((sum, count) => sum + count, 0);
+
+const applyQuestProgress = (currentUser: UserProfile, type: QuestType, amount: number = 1) => {
+    if (!currentUser.quests || currentUser.quests.length === 0) {
+        return { nextUser: currentUser, hasUpdates: false, leveledUp: false };
+    }
+
+    let xpGained = 0;
+    let hasUpdates = false;
+    const newQuests = currentUser.quests.map(q => {
+        if (q.type === type && !q.completed) {
+            const newProgress = q.progress + amount;
+            if (newProgress >= q.target) {
+                xpGained += q.xpReward;
+                hasUpdates = true;
+                return { ...q, progress: newProgress, completed: true };
+            }
+            hasUpdates = true;
+            return { ...q, progress: newProgress };
+        }
+        return q;
+    });
+
+    if (!hasUpdates) {
+        return { nextUser: currentUser, hasUpdates: false, leveledUp: false };
+    }
+
+    const nextUser = { ...currentUser, quests: newQuests, xp: currentUser.xp + xpGained };
+    const calculatedLevel = Math.floor(nextUser.xp / 500) + 1;
+    const leveledUp = calculatedLevel > nextUser.level;
+    if (leveledUp) nextUser.level = calculatedLevel;
+
+    return { nextUser, hasUpdates: true, leveledUp };
+};
+
+const normalizeUser = (partial?: Partial<UserProfile> | null): UserProfile => {
+    const learningHistory = partial?.learningHistory || {};
+    return {
+        ...INITIAL_USER,
+        ...partial,
+        learningHistory,
+        cardsLearned: partial?.cardsLearned ?? getCardsLearnedTotal(learningHistory),
+        quests: partial?.quests || [],
+        lastStudyDate: partial?.lastStudyDate || '',
+    };
+};
+
 export const useAppData = (session: Session | null, offlineMode: boolean) => {
     const [user, setUser] = useState<UserProfile>(INITIAL_USER);
     const [cards, setCards] = useState<Flashcard[]>([]);
@@ -23,49 +79,67 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
     const [savedStories, setSavedStories] = useState<SavedStory[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // --- Helpers ---
-    const updateQuestProgress = async (type: QuestType, amount: number = 1) => {
-        if (!user.quests) return;
-        let xpGained = 0;
-        let hasUpdates = false;
-        const newQuests = user.quests.map(q => {
-            if (q.type === type && !q.completed) {
-                const newProgress = q.progress + amount;
-                if (newProgress >= q.target) {
-                    xpGained += q.xpReward;
-                    hasUpdates = true;
-                    return { ...q, progress: newProgress, completed: true };
-                }
-                hasUpdates = true;
-                return { ...q, progress: newProgress };
-            }
-            return q;
+    const persistProfile = useCallback(async (nextUser: UserProfile) => {
+        if (session && session.user.email !== 'offline@demo.com') {
+            await supabase
+                .from('profiles')
+                .update({
+                    quests: nextUser.quests,
+                    xp: nextUser.xp,
+                    level: nextUser.level,
+                    streak: nextUser.streak,
+                    last_study_date: nextUser.lastStudyDate || null,
+                    learning_history: nextUser.learningHistory,
+                })
+                .eq('id', session.user.id);
+        }
+    }, [session]);
+
+    const updateQuestProgress = useCallback(async (type: QuestType, amount: number = 1, baseUser?: UserProfile) => {
+        const sourceUser = baseUser || user;
+        const { nextUser, hasUpdates, leveledUp } = applyQuestProgress(sourceUser, type, amount);
+        if (!hasUpdates) return sourceUser;
+
+        if (leveledUp) {
+            notifySuccess(`Уровень повышен! Теперь ваш уровень: ${nextUser.level}`);
+        }
+
+        setUser(nextUser);
+        await persistProfile(nextUser);
+        return nextUser;
+    }, [persistProfile, user]);
+
+    const recordReviewProgress = useCallback(async (amount: number = 1) => {
+        const today = getTodayKey();
+        const learningHistory = {
+            ...user.learningHistory,
+            [today]: (user.learningHistory?.[today] || 0) + amount,
+        };
+
+        const streak = user.lastStudyDate === today
+            ? Math.max(user.streak, 1)
+            : user.lastStudyDate === getYesterdayKey()
+                ? user.streak + 1
+                : 1;
+
+        const baseUser = normalizeUser({
+            ...user,
+            streak,
+            lastStudyDate: today,
+            learningHistory,
         });
 
-        if (hasUpdates) {
-            const newUser = { ...user, quests: newQuests, xp: user.xp + xpGained };
-            const calculatedLevel = Math.floor(newUser.xp / 500) + 1;
-            if (calculatedLevel > newUser.level) {
-                newUser.level = calculatedLevel;
-                notifySuccess(`Уровень повышен! Теперь ваш уровень: ${newUser.level}`);
-            }
-            setUser(newUser);
-            if (session && session.user.email !== 'offline@demo.com') {
-                await supabase.from('profiles').update({ quests: newQuests, xp: newUser.xp, level: newUser.level }).eq('id', session.user.id);
-            }
-        }
-    };
+        await updateQuestProgress('review_cards', amount, baseUser);
+    }, [updateQuestProgress, user]);
 
-    // --- Actions ---
     const addCards = async (newCards: Flashcard[]) => {
         setCards(prev => [...newCards, ...prev]);
-        updateQuestProgress('add_cards', newCards.length);
+        await updateQuestProgress('add_cards', newCards.length);
 
         if (session && session.user.email !== 'offline@demo.com') {
             try {
                 const rows = await Promise.all(newCards.map(async (c) => {
                     let audioUrl = c.audioBase64;
-                    // If audio is big base64 (not URL), upload it
                     if (c.audioBase64 && c.audioBase64.length > 500 && !c.audioBase64.startsWith('http')) {
                         const fileName = `${session.user.id}/${c.id}.mp3`;
                         const publicUrl = await uploadBase64File('media', `audio/${fileName}`, c.audioBase64, 'audio/mp3');
@@ -73,7 +147,6 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
                     }
 
                     let imageUrl = c.imageUrl;
-                    // If image is big base64, upload it
                     if (c.imageUrl && c.imageUrl.length > 500 && !c.imageUrl.startsWith('http')) {
                         const fileName = `${session.user.id}/${c.id}.png`;
                         const publicUrl = await uploadBase64File('media', `images/${fileName}`, c.imageUrl, 'image/png');
@@ -81,14 +154,29 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
                     }
 
                     return {
-                        id: c.id, user_id: session.user.id, original_term: c.originalTerm, translation: c.translation, folder_ids: c.folderIds, tags: c.tags, frequency: c.frequency, interval: c.interval, ease_factor: c.easeFactor, next_review_date: c.nextReviewDate, definition: c.definition, examples: c.examples, grammar_notes: c.grammarNotes, conjugation: c.conjugation, image_url: imageUrl, audio_url: audioUrl,
+                        id: c.id,
+                        user_id: session.user.id,
+                        original_term: c.originalTerm,
+                        translation: c.translation,
+                        folder_ids: c.folderIds,
+                        tags: c.tags,
+                        frequency: c.frequency,
+                        interval: c.interval,
+                        ease_factor: c.easeFactor,
+                        next_review_date: c.nextReviewDate,
+                        definition: c.definition,
+                        examples: c.examples,
+                        grammar_notes: c.grammarNotes,
+                        conjugation: c.conjugation,
+                        image_url: imageUrl,
+                        audio_url: audioUrl,
                     };
                 }));
 
                 const { error } = await supabase.from('flashcards').insert(rows);
-                if (error) console.error("Error saving cards:", error);
-            } catch (e) {
-                console.error("Failed to save cards", e);
+                if (error) console.error('Error saving cards:', error);
+            } catch (error) {
+                console.error('Failed to save cards', error);
             }
         }
     };
@@ -99,7 +187,6 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
         const storyId = self.crypto.randomUUID();
         let audioUrl = null;
 
-        // Save audio to user storage
         if (audioBase64 && !audioBase64.startsWith('http') && session.user.email !== 'offline@demo.com') {
             const publicUrl = await uploadBase64File('media', `audio/${session.user.id}/stories/${storyId}.mp3`, audioBase64, 'audio/mp3');
             if (publicUrl) audioUrl = publicUrl;
@@ -108,80 +195,133 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
         }
 
         const newStory: SavedStory = {
-            id: storyId, contentPt: story.pt, contentRu: story.ru, audioUrl: audioUrl || undefined, wordsUsed: wordsUsed, createdAt: Date.now()
+            id: storyId,
+            contentPt: story.pt,
+            contentRu: story.ru,
+            audioUrl: audioUrl || undefined,
+            wordsUsed,
+            createdAt: Date.now()
         };
 
         setSavedStories(prev => [newStory, ...prev]);
-        updateQuestProgress('create_story');
+        await updateQuestProgress('create_story');
 
         if (session.user.email !== 'offline@demo.com') {
             await supabase.from('stories').insert({
-                id: storyId, user_id: session.user.id, content_pt: story.pt, content_ru: story.ru, audio_url: audioUrl, words_used: wordsUsed
+                id: storyId,
+                user_id: session.user.id,
+                content_pt: story.pt,
+                content_ru: story.ru,
+                audio_url: audioUrl,
+                words_used: wordsUsed
             });
         }
     };
 
-    // --- Data Fetching ---
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             if (session && session.user.email !== 'offline@demo.com') {
-                // Profile
                 const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
                 if (profile) {
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = getTodayKey();
                     let currentQuests = profile.quests || [];
                     if (profile.last_quest_date !== today) {
                         currentQuests = generateDailyQuests();
                         await supabase.from('profiles').update({ quests: currentQuests, last_quest_date: today }).eq('id', session.user.id);
                     }
-                    setUser({ xp: profile.xp, level: profile.level, streak: profile.streak, lastStudyDate: new Date().toISOString(), cardsLearned: 0, learningHistory: profile.learning_history || {}, quests: currentQuests, lastQuestDate: profile.last_quest_date || today });
+
+                    setUser(normalizeUser({
+                        xp: profile.xp,
+                        level: profile.level,
+                        streak: profile.streak || 0,
+                        lastStudyDate: profile.last_study_date || '',
+                        learningHistory: profile.learning_history || {},
+                        quests: currentQuests,
+                        lastQuestDate: profile.last_quest_date || today,
+                    }));
                 } else {
-                    const today = new Date().toISOString().split('T')[0];
-                    const defaultUser = { ...INITIAL_USER, quests: generateDailyQuests(), lastQuestDate: today };
-                    await supabase.from('profiles').upsert({ id: session.user.id, ...defaultUser, last_quest_date: today, learning_history: {} });
+                    const today = getTodayKey();
+                    const defaultUser = normalizeUser({ quests: generateDailyQuests(), lastQuestDate: today });
+                    await supabase.from('profiles').upsert({
+                        id: session.user.id,
+                        xp: defaultUser.xp,
+                        level: defaultUser.level,
+                        streak: defaultUser.streak,
+                        quests: defaultUser.quests,
+                        last_quest_date: today,
+                        last_study_date: null,
+                        learning_history: {},
+                    });
                     setUser(defaultUser);
                 }
-                // Folders
+
                 const { data: dbFolders, error: foldersError } = await supabase.from('folders').select('*').eq('user_id', session.user.id);
                 if (foldersError) console.error('[Data] Folders fetch error:', foldersError);
                 if (dbFolders) setFolders(dbFolders.map(f => ({ id: f.id, name: f.name, createdAt: new Date(f.created_at).getTime() })));
-                console.log('[Data] Loaded folders:', dbFolders?.length || 0);
 
-                // Cards
                 const { data: dbCards, error: cardsError } = await supabase.from('flashcards').select('*').eq('user_id', session.user.id);
                 if (cardsError) console.error('[Data] Cards fetch error:', cardsError);
-                if (dbCards) setCards(dbCards.map(row => ({ id: row.id, folderIds: row.folder_ids || [], tags: row.tags || [], originalTerm: row.original_term, translation: row.translation, frequency: row.frequency, imageUrl: row.image_url, audioBase64: row.audio_url, interval: row.interval, easeFactor: row.ease_factor, nextReviewDate: row.next_review_date, createdAt: new Date(row.created_at).getTime(), difficulty: row.difficulty || Difficulty.New, definition: row.definition, examples: row.examples, grammarNotes: row.grammar_notes, conjugation: row.conjugation, imagePrompt: row.image_prompt })));
-                console.log('[Data] Loaded cards:', dbCards?.length || 0);
+                if (dbCards) {
+                    setCards(dbCards.map(row => ({
+                        id: row.id,
+                        folderIds: row.folder_ids || [],
+                        tags: row.tags || [],
+                        originalTerm: row.original_term,
+                        translation: row.translation,
+                        frequency: row.frequency,
+                        imageUrl: row.image_url,
+                        audioBase64: row.audio_url,
+                        interval: row.interval,
+                        easeFactor: row.ease_factor,
+                        nextReviewDate: row.next_review_date,
+                        createdAt: new Date(row.created_at).getTime(),
+                        difficulty: row.difficulty || Difficulty.New,
+                        definition: row.definition,
+                        examples: row.examples,
+                        grammarNotes: row.grammar_notes,
+                        conjugation: row.conjugation,
+                        imagePrompt: row.image_prompt
+                    })));
+                }
 
-                // Stories
                 const { data: dbStories } = await supabase.from('stories').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-                if (dbStories) setSavedStories(dbStories.map(s => ({ id: s.id, contentPt: s.content_pt, contentRu: s.content_ru, audioUrl: s.audio_url, wordsUsed: s.words_used, createdAt: new Date(s.created_at).getTime() })));
-
+                if (dbStories) {
+                    setSavedStories(dbStories.map(story => ({
+                        id: story.id,
+                        contentPt: story.content_pt,
+                        contentRu: story.content_ru,
+                        audioUrl: story.audio_url,
+                        wordsUsed: story.words_used,
+                        createdAt: new Date(story.created_at).getTime()
+                    })));
+                }
             } else if (offlineMode || session?.user.email === 'offline@demo.com') {
                 const savedCards = JSON.parse(localStorage.getItem('luso_cards') || '[]');
                 const savedFolders = JSON.parse(localStorage.getItem('luso_folders') || '[]');
-                const savedUser = JSON.parse(localStorage.getItem('luso_user') || JSON.stringify(INITIAL_USER));
-                const today = new Date().toISOString().split('T')[0];
+                const savedUserRaw = JSON.parse(localStorage.getItem('luso_user') || JSON.stringify(INITIAL_USER));
+                const savedUser = normalizeUser(savedUserRaw);
+                const today = getTodayKey();
+
                 if (savedUser.lastQuestDate !== today) {
                     savedUser.quests = generateDailyQuests();
                     savedUser.lastQuestDate = today;
                     localStorage.setItem('luso_user', JSON.stringify(savedUser));
                 }
+
                 setCards(savedCards);
-                const customFolders = savedFolders.filter((f: any) => f.id !== 'default');
-                setFolders(customFolders);
+                setFolders(savedFolders.filter((folder: any) => folder.id !== 'default'));
                 setUser(savedUser);
             }
         } catch (error) {
-            console.error("Error fetching data:", error);
+            console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
-    }, [session, offlineMode]);
+    }, [offlineMode, session]);
 
     useEffect(() => {
-        if ((offlineMode || session?.user.email === 'offline@demo.com')) {
+        if (offlineMode || session?.user.email === 'offline@demo.com') {
             localStorage.setItem('luso_cards', JSON.stringify(cards));
             localStorage.setItem('luso_folders', JSON.stringify(folders));
             localStorage.setItem('luso_user', JSON.stringify(user));
@@ -192,7 +332,6 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
 
     return {
         user, setUser, cards, setCards, folders, setFolders, savedStories, setSavedStories,
-        loading, fetchData, updateQuestProgress, addCards, saveStoryToDb
+        loading, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
     };
 };
-
