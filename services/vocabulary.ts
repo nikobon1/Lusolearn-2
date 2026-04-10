@@ -1,4 +1,4 @@
-import { Type } from "@google/genai";
+import { Type } from "./geminiSchema";
 import { generateContent, callWithRetry } from "./client";
 import { VocabularyItem, AICardDetails, Example } from "../types";
 

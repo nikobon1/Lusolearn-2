@@ -1,4 +1,4 @@
-import { Type } from "@google/genai";
+import { Type } from "./geminiSchema";
 import { generateContent, callWithRetry } from "./client";
 
 export const generateStoryFromWords = async (words: string[]): Promise<{ pt: string, ru: string, audioBase64?: string }> => {

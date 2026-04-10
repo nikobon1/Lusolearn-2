@@ -11,15 +11,18 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
-    "react-dom": "^19.2.0",
-    "uuid": "^13.0.0",
-    "react": "^19.2.0",
     "@supabase/supabase-js": "^2.84.0",
-    "serve": "^14.2.0"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "serve": "^14.2.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.27",
+    "tailwindcss": "^4.2.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   },

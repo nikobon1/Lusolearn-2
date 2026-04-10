@@ -1,15 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Auth } from './components/Auth';
 import Layout from './components/Layout';
 import NotificationCenter from './components/NotificationCenter';
 import DashboardView from './components/DashboardView';
-import StudyContainer from './components/StudyContainer';
-import Creator from './components/Creator';
-import StoryView from './components/StoryView';
-import WordListModal from './components/WordListModal';
-import StudyConfigModal from './components/StudyConfigModal';
-import StoryConfigModal from './components/StoryConfigModal';
 import { useAppData } from './hooks/useAppData';
 import { useTheme } from './hooks/useTheme';
 import { useStudyState } from './hooks/useStudyState';
@@ -17,6 +11,19 @@ import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
 import { Flashcard, ViewState } from './types';
 import { getCurrentSession, signOutUser, subscribeAuthState } from './services/repositories/authRepository';
+
+const StudyContainer = lazy(() => import('./components/StudyContainer'));
+const Creator = lazy(() => import('./components/Creator'));
+const StoryView = lazy(() => import('./components/StoryView'));
+const WordListModal = lazy(() => import('./components/WordListModal'));
+const StudyConfigModal = lazy(() => import('./components/StudyConfigModal'));
+const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
+
+const ScreenFallback = ({ className = 'h-full flex items-center justify-center p-4' }: { className?: string }) => (
+    <div className={className}>
+        <LoaderIcon className="h-8 w-8 animate-spin text-emerald-600" />
+    </div>
+);
 
 export default function App() {
     const [session, setSession] = useState<Session | null>(null);
@@ -102,25 +109,29 @@ export default function App() {
 
             {view === ViewState.Study && studyQueue.length > 0 && (
                 <div className="h-full flex items-center justify-center p-4 bg-slate-100/50 dark:bg-slate-900">
-                    <StudyContainer
-                        cards={studyQueue}
-                        onComplete={() => setView(ViewState.Dashboard)}
-                        onUpdateCard={(updated) => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
-                        onProgress={recordReviewProgress}
-                        userId={session?.user.id}
-                    />
+                    <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center p-4" />}>
+                        <StudyContainer
+                            cards={studyQueue}
+                            onComplete={() => setView(ViewState.Dashboard)}
+                            onUpdateCard={(updated) => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
+                            onProgress={recordReviewProgress}
+                            userId={session?.user.id}
+                        />
+                    </Suspense>
                 </div>
             )}
 
             {view === ViewState.Create && (
                 <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-900 p-0 md:p-8 flex items-center justify-center">
                     <div className="w-full h-full md:h-[85vh] md:max-w-4xl bg-white dark:bg-slate-800 md:rounded-2xl md:shadow-2xl md:border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
-                        <Creator
-                            onCardsCreated={onCardsCreated}
-                            onCancel={() => setView(ViewState.Dashboard)}
-                            folders={folders}
-                            onCreateFolder={(newFolder) => setFolders(prev => [...prev, newFolder])}
-                        />
+                        <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center p-4" />}>
+                            <Creator
+                                onCardsCreated={onCardsCreated}
+                                onCancel={() => setView(ViewState.Dashboard)}
+                                folders={folders}
+                                onCreateFolder={(newFolder) => setFolders(prev => [...prev, newFolder])}
+                            />
+                        </Suspense>
                     </div>
                 </div>
             )}
@@ -151,34 +162,44 @@ export default function App() {
             )}
 
             {view === ViewState.Story && (
-                <StoryView
-                    key={storyGenIndex}
-                    cards={viewingStory ? undefined : storyCards}
-                    initialStory={viewingStory || undefined}
-                    onBack={() => { setViewingStory(null); setView(viewingStory ? ViewState.StoryList : ViewState.Dashboard); }}
-                    onNext={() => { setViewingStory(null); setShowStoryConfig(true); }}
-                    onSave={handleSaveStory}
-                />
+                <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center p-4" />}>
+                    <StoryView
+                        key={storyGenIndex}
+                        cards={viewingStory ? undefined : storyCards}
+                        initialStory={viewingStory || undefined}
+                        onBack={() => { setViewingStory(null); setView(viewingStory ? ViewState.StoryList : ViewState.Dashboard); }}
+                        onNext={() => { setViewingStory(null); setShowStoryConfig(true); }}
+                        onSave={handleSaveStory}
+                    />
+                </Suspense>
             )}
 
             {/* MODALS */}
             {listModalConfig && (
                 <div className="absolute inset-0 z-[60] bg-black/50 backdrop-blur-sm">
-                    <WordListModal title={listModalConfig?.title || ''} cards={listModalConfig?.filter === 'learned' ? cards.filter(c => c.interval > 0) : cards.filter(c => c.interval === 0)} onClose={() => setListModalConfig(null)} onCardClick={handleStudySingleCard} />
+                    <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center" />}>
+                        <WordListModal title={listModalConfig?.title || ''} cards={listModalConfig?.filter === 'learned' ? cards.filter(c => c.interval > 0) : cards.filter(c => c.interval === 0)} onClose={() => setListModalConfig(null)} onCardClick={handleStudySingleCard} />
+                    </Suspense>
                 </div>
             )}
 
-            {showStudyConfig && (<StudyConfigModal onClose={() => setShowStudyConfig(false)} onStart={handleStartStudy} />)}
+            {showStudyConfig && (
+                <Suspense fallback={<ScreenFallback className="fixed inset-0 z-[60] flex items-center justify-center" />}>
+                    <StudyConfigModal onClose={() => setShowStudyConfig(false)} onStart={handleStartStudy} />
+                </Suspense>
+            )}
 
             {showStoryConfig && (
-                <StoryConfigModal
-                    folders={folders}
-                    currentFolderId={'all'}
-                    totalCards={cards.length}
-                    onClose={() => setShowStoryConfig(false)}
-                    onGoToCreate={() => setView(ViewState.Create)}
-                    onStart={handleStartStory}
-                />
+                <Suspense fallback={<ScreenFallback className="fixed inset-0 z-[60] flex items-center justify-center" />}>
+                    <StoryConfigModal
+                        folders={folders}
+                        currentFolderId={'all'}
+                        totalCards={cards.length}
+                        onClose={() => setShowStoryConfig(false)}
+                        onGoToCreate={() => setView(ViewState.Create)}
+                        onStart={handleStartStory}
+                    />
+                </Suspense>
             )}
             </Layout>
         </>
