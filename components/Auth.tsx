@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LoaderIcon, GoogleIcon } from './Icons';
 import { notifyInfo, notifySuccess } from '../lib/notifications';
 import { signInWithEmail, signInWithGoogle, signUpWithEmail } from '../services/repositories/authRepository';
+import { env } from '../config/env';
 
 interface Props {
     onLoginSuccess: () => void;
@@ -14,6 +15,31 @@ export const Auth: React.FC<Props> = ({ onLoginSuccess, onOfflineMode }) => {
     const [password, setPassword] = useState('');
     const [mode, setMode] = useState<'login' | 'signup'>('login');
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const rawDescription = params.get('error_description');
+        const rawError = params.get('error');
+        const rawCode = params.get('error_code');
+
+        if (!rawDescription && !rawError && !rawCode) return;
+
+        const description = decodeURIComponent(rawDescription || '').replace(/\+/g, ' ').trim();
+        const message = `${rawCode ? `${rawCode}: ` : ''}${description || rawError || 'OAuth sign-in failed'}`;
+        const normalized = message.toLowerCase();
+
+        let friendlyMessage = message;
+        if (normalized.includes('provider is not enabled')) {
+            friendlyMessage = 'Google login is not enabled in Supabase Auth Providers for the current project.';
+        } else if (normalized.includes('redirect_uri_mismatch') || (normalized.includes('redirect') && normalized.includes('mismatch'))) {
+            friendlyMessage = 'The current site URL is missing from Supabase Auth URL Configuration or Google OAuth redirect settings.';
+        } else if (normalized.includes('access_denied')) {
+            friendlyMessage = 'Google denied the sign-in request. Check the OAuth consent screen and allowed redirect URLs.';
+        }
+
+        setError(friendlyMessage);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }, []);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,8 +72,10 @@ export const Auth: React.FC<Props> = ({ onLoginSuccess, onOfflineMode }) => {
         }
 
         setLoading(true);
+        setError(null);
         try {
-            const { error: oauthError } = await signInWithGoogle(window.location.origin);
+            const redirectTo = new URL(window.location.pathname, window.location.origin).toString();
+            const { error: oauthError } = await signInWithGoogle(redirectTo);
             if (oauthError) throw oauthError;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Ошибка входа через Google';
@@ -84,6 +112,13 @@ export const Auth: React.FC<Props> = ({ onLoginSuccess, onOfflineMode }) => {
                         <GoogleIcon className="w-5 h-5" />
                         Войти через Google
                     </button>
+
+                    {env.usingFallbackSupabase && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                            Приложение использует fallback Supabase-проект `qhyvcrwucjxsgylzmsdu.supabase.co`.
+                            Если это не ваш проект, задайте `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` локально и в окружении деплоя.
+                        </div>
+                    )}
 
                     <div className="relative flex py-2 items-center">
                         <div className="flex-grow border-t border-slate-100 dark:border-slate-700"></div>
@@ -144,4 +179,3 @@ export const Auth: React.FC<Props> = ({ onLoginSuccess, onOfflineMode }) => {
         </div>
     );
 };
-

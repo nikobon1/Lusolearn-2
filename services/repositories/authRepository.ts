@@ -26,7 +26,11 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signInWithGoogle = async (redirectTo: string) => {
     return supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo },
+        options: {
+            redirectTo,
+            queryParams: {
+                prompt: 'select_account',
+            },
+        },
     });
 };
-
