@@ -1,6 +1,3 @@
-// Speech Recognition Service using Google Cloud Speech-to-Text API
-import { env } from '../config/env';
-
 export interface TranscriptionResult {
     transcript: string;
     confidence: number;
@@ -124,12 +121,6 @@ export function comparePronunciation(expected: string, heard: string): Pronuncia
 
 // Transcribe audio using Google Cloud Speech-to-Text API
 export async function transcribeAudio(audioBlob: Blob): Promise<TranscriptionResult> {
-    const apiKey = env.googleCloudApiKey;
-
-    if (!apiKey) {
-        throw new Error("Google Cloud API Key not found. Add VITE_GOOGLE_CLOUD_API_KEY to .env.local");
-    }
-
     // Convert blob to base64
     const arrayBuffer = await audioBlob.arrayBuffer();
     const base64Audio = btoa(
@@ -138,23 +129,20 @@ export async function transcribeAudio(audioBlob: Blob): Promise<TranscriptionRes
 
     console.log(`[Speech] 🎙️ Transcribing audio (${Math.round(audioBlob.size / 1024)}KB)...`);
 
-    const response = await fetch(
-        `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`,
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                config: {
-                    encoding: 'WEBM_OPUS',
-                    sampleRateHertz: 48000,
-                    languageCode: 'pt-PT', // European Portuguese
-                    enableWordConfidence: true,
-                    model: 'default',
-                },
-                audio: { content: base64Audio }
-            })
-        }
-    );
+    const response = await fetch('/api/speech', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            config: {
+                encoding: 'WEBM_OPUS',
+                sampleRateHertz: 48000,
+                languageCode: 'pt-PT',
+                enableWordConfidence: true,
+                model: 'default',
+            },
+            audio: { content: base64Audio }
+        })
+    });
 
     if (!response.ok) {
         const error = await response.json();
@@ -165,18 +153,12 @@ export async function transcribeAudio(audioBlob: Blob): Promise<TranscriptionRes
     const data = await response.json();
     console.log('[Speech] ✅ Transcription result:', data);
 
-    if (!data.results || data.results.length === 0) {
-        return { transcript: '', confidence: 0, words: [] };
-    }
-
-    const result = data.results[0].alternatives[0];
-
     return {
-        transcript: result.transcript || '',
-        confidence: result.confidence || 0,
-        words: result.words?.map((w: any) => ({
+        transcript: data.transcript || '',
+        confidence: data.confidence || 0,
+        words: Array.isArray(data.words) ? data.words.map((w: any) => ({
             word: w.word,
             confidence: w.confidence || 0
-        }))
+        })) : []
     };
 }
