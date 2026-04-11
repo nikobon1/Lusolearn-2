@@ -1,97 +1,126 @@
 # Handoff
 
-## Current focus
+## Current state
 
-Fix production authentication and secret handling for `https://lusolearn.vercel.app`.
-
-## What we found
-
-1. Google OAuth itself is not the primary failure right now.
-2. Production is redirecting to:
-   - `https://qhyvcrwucjxsgylzmsdu.supabase.co/auth/v1/authorize`
-3. That Supabase host currently fails with:
-   - `DNS_PROBE_FINISHED_NXDOMAIN`
-4. Therefore the production app is using an invalid Supabase project URL.
-
-## Important conclusions
-
-- The issue is currently a bad Supabase config, not a Google provider config.
-- `qhyvcrwucjxsgylzmsdu.supabase.co` is currently baked into the live client bundle.
-- The warning about fallback disappeared earlier because Vercel env vars started being read, but they appear to contain the wrong Supabase URL/key pair.
-- `VITE_SUPABASE_URL` and likely `VITE_SUPABASE_ANON_KEY` on Vercel need to be replaced with the real values from the correct Supabase project.
-
-## Code changes already made locally
-
-These files currently have local modifications and were used in the latest Vercel redeploy, but are not committed/pushed yet:
-
-- [components/Auth.tsx](/C:/Users/bonap/Documents/Projects/Lusolearn%202/components/Auth.tsx)
-- [config/env.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/config/env.ts)
-- [services/repositories/authRepository.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/services/repositories/authRepository.ts)
-
-### Purpose of those changes
-
-- Show clearer OAuth errors on the login page
-- Warn when fallback Supabase config is in use
-- Improve Google OAuth redirect handling
-- Fix client env reading for Vite via `import.meta.env`
-
-## Vercel state
-
-The following env vars exist on Vercel:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `REACT_APP_SUPABASE_URL`
-- `REACT_APP_SUPABASE_ANON_KEY`
-- `VITE_GOOGLE_CLOUD_API_KEY`
-- `GEMINI_API_KEY`
-- `ELEVEN_LABS_API_KEY`
-
-Latest production alias:
+Production is live at:
 
 - `https://lusolearn.vercel.app`
 
-Recent production deployment was completed successfully, but it still points to the invalid Supabase host because the configured values appear to be wrong.
+Latest pushed commit:
 
-## Secret handling findings
+- `16639dd` on `main`
 
-- `.env.local` was not found in git history as a committed file.
-- No clear evidence of secrets in git history or Vercel runtime logs was found.
-- However, a Google-style key (`AIza...`) was found in the built client bundle because `VITE_GOOGLE_CLOUD_API_KEY` is used client-side in:
-  - [services/speechRecognition.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/services/speechRecognition.ts)
-- This means the Speech key should be treated as exposed and was already rotated.
+Current local-only change:
 
-## Required next steps
+- [`.env.local`](/C:/Users/bonap/Documents/Projects/Lusolearn%202/.env.local)
+  - `VITE_GOOGLE_CLOUD_API_KEY` was renamed to `SPEECH_API_KEY`
+  - this was intentionally not committed
 
-1. In the correct Supabase project dashboard, open:
-   - `Project Settings -> API`
-2. Copy the real values for:
-   - `Project URL`
-   - `anon public key`
-3. In Vercel, replace:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-4. Make sure both values come from the same Supabase project.
-5. Remove old duplicate vars if desired after verification:
+## What was completed
+
+### Product and UX work
+
+- Mobile navigation was expanded and cleaned up
+- Dashboard word list got search, filters, sorting, and removed the hard 50-card cap
+- Study flow now supports richer SRS grading instead of a binary review result
+- Real review history, streak, and related stats were wired into app state
+- Frontend delivery was improved:
+  - Tailwind CDN removed
+  - local CSS pipeline enabled
+  - major screens lazy-loaded
+  - main bundle reduced significantly
+
+### Authentication
+
+- Google login is working again
+- The blocking issue turned out to be the Supabase project being paused
+- Additional auth diagnostics were added:
+  - clearer OAuth error handling on the login screen
+  - warning when fallback Supabase config is in use
+  - better Google OAuth redirect handling
+
+Relevant files:
+
+- [components/Auth.tsx](/C:/Users/bonap/Documents/Projects/Lusolearn%202/components/Auth.tsx)
+- [services/repositories/authRepository.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/services/repositories/authRepository.ts)
+- [config/env.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/config/env.ts)
+
+### Speech key migration
+
+Speech recognition was moved behind a server endpoint so the Google Speech key is no longer exposed through client env configuration.
+
+Relevant files:
+
+- [api/speech.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/api/speech.ts)
+- [services/speechRecognition.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/services/speechRecognition.ts)
+- [config/env.ts](/C:/Users/bonap/Documents/Projects/Lusolearn%202/config/env.ts)
+
+What changed:
+
+- client no longer calls `speech.googleapis.com` directly
+- client no longer reads a speech key from `import.meta.env`
+- server endpoint reads:
+  - `SPEECH_API_KEY`
+  - or `GOOGLE_CLOUD_API_KEY`
+  - and only as a temporary fallback `VITE_GOOGLE_CLOUD_API_KEY`
+
+Verification already done:
+
+- local `npm.cmd run build` passed
+- production redeploy completed successfully
+- Vercel env now uses `SPEECH_API_KEY`
+- `VITE_GOOGLE_CLOUD_API_KEY` was removed from Vercel
+
+## Current Vercel env shape
+
+Present on Vercel:
+
+- `SPEECH_API_KEY`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `GEMINI_API_KEY`
+- `ELEVEN_LABS_API_KEY`
+- `REACT_APP_SUPABASE_URL`
+- `REACT_APP_SUPABASE_ANON_KEY`
+
+Notes:
+
+- `SPEECH_API_KEY` exists in `Production`, `Preview`, and `Development`
+- old `REACT_APP_SUPABASE_*` variables still exist as duplicates and can be removed later
+
+## Secret handling conclusions
+
+- `.env.local` was not found committed in git history
+- no clear evidence of secrets in Vercel runtime logs was found during prior checks
+- the old browser Speech key had been exposed previously through the client bundle
+- that risk was mitigated by:
+  - rotating the key
+  - moving speech requests server-side
+  - removing `VITE_GOOGLE_CLOUD_API_KEY` from Vercel
+
+## What still needs to be done
+
+### Short term
+
+1. Verify speech recognition end-to-end on production.
+2. Verify Gemini-powered flows still work after the env cleanup.
+3. Remove duplicate Vercel vars if desired:
    - `REACT_APP_SUPABASE_URL`
    - `REACT_APP_SUPABASE_ANON_KEY`
-6. Redeploy production.
-7. Verify:
-   - login page no longer redirects to `qhyvcrwucjxsgylzmsdu.supabase.co`
-   - Google login reaches the correct Supabase project
-   - if OAuth still fails after that, then check Supabase Google provider + redirect URLs
 
-## After auth is fixed
+### Nice next engineering steps
 
-Next security task:
+1. Add `lint` and `typecheck` scripts if still missing.
+2. Add basic smoke tests for:
+   - login
+   - card creation
+   - study session
+   - story generation
+3. Consider another rotation of the Speech key after confirming the server-side flow is stable.
 
-1. Move speech recognition off the client and onto a server endpoint.
-2. Remove public usage of `VITE_GOOGLE_CLOUD_API_KEY`.
-3. Rotate any Google key again if necessary after migration.
+## Useful commands
 
-## Useful verification snippets
-
-### Check current working tree
+### Check git state
 
 ```powershell
 git status --short
@@ -103,7 +132,7 @@ git status --short
 npm.cmd run build
 ```
 
-### Redeploy to production
+### Redeploy production
 
 ```powershell
 npx.cmd vercel@50.13.2 --prod --yes
@@ -118,5 +147,5 @@ npx.cmd vercel@50.13.2 env ls
 ## Notes for the next session
 
 - Do not store real secrets in this file.
-- Do not trust the current Supabase values on Vercel until they are manually verified against Supabase Dashboard.
-- If production still redirects to `qhyvcrwucjxsgylzmsdu.supabase.co`, the wrong URL is still being deployed.
+- `.env.local` is intentionally local-only and currently differs from git.
+- If speech fails after future env changes, first check that `SPEECH_API_KEY` still exists on Vercel.
