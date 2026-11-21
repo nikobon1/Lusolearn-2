@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase, uploadBase64File } from '../services/supabase';
 import { UserProfile, Flashcard, Folder, SavedStory, QuestType, Quest, Difficulty } from '../types';
@@ -78,6 +78,8 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
     const [folders, setFolders] = useState<Folder[]>([]);
     const [savedStories, setSavedStories] = useState<SavedStory[]>([]);
     const [loading, setLoading] = useState(true);
+    // Offline mode: don't write localStorage until it has been read, or the empty initial state wipes saved cards
+    const offlineLoadedRef = useRef(false);
 
     const persistProfile = useCallback(async (nextUser: UserProfile) => {
         if (session && session.user.email !== 'offline@demo.com') {
@@ -312,6 +314,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
                 setCards(savedCards);
                 setFolders(savedFolders.filter((folder: any) => folder.id !== 'default'));
                 setUser(savedUser);
+                offlineLoadedRef.current = true;
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -321,7 +324,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
     }, [offlineMode, session]);
 
     useEffect(() => {
-        if (offlineMode || session?.user.email === 'offline@demo.com') {
+        if ((offlineMode || session?.user.email === 'offline@demo.com') && offlineLoadedRef.current) {
             localStorage.setItem('luso_cards', JSON.stringify(cards));
             localStorage.setItem('luso_folders', JSON.stringify(folders));
             localStorage.setItem('luso_user', JSON.stringify(user));
