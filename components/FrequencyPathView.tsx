@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Flashcard } from '../types';
 import {
-    BatchFocus, EntryStatus, FrequencyEntry, FREQUENCY_TAG, POS_LABELS, PartOfSpeech,
+    BatchFocus, EntryStatus, FrequencyEntry, FREQUENCY_TAG, POS_LABELS, PartOfSpeech, TOPICS, TOPIC_LABELS, Topic,
     buildCardKeySet, entryKey, getCoverageLevels, getEntryStatus, getNextBatch, getTextCoverage,
     loadFrequencyDictionary, rankToFrequency,
 } from '../domain/frequencyDictionary';
@@ -27,6 +27,7 @@ const PAGE_SIZE = 60;
 
 const FOCUS_OPTIONS: { id: BatchFocus; label: string }[] = [
     { id: 'all', label: 'Все слова' },
+    { id: 'everyday', label: 'Только быт' },
     { id: 'content', label: 'Без служебных' },
     { id: 'verbs', label: 'Только глаголы' },
 ];
@@ -38,6 +39,11 @@ const PosBadge = ({ entry }: { entry: FrequencyEntry }) => (
         <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-300">
             {POS_LABELS[entry.p]}
         </span>
+        {entry.t && (
+            <span className="rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                {TOPIC_LABELS[entry.t]}
+            </span>
+        )}
         {entry.irr && (
             <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                 неправ.
@@ -79,6 +85,7 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
     const [search, setSearch] = useState('');
     const [posFilter, setPosFilter] = useState<PosFilter>('all');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const [topicFilter, setTopicFilter] = useState<'all' | Topic>('all');
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     const { knownKeys, dailyGoal, markKnown, unmarkKnown, setDailyGoal } = useFrequencyProgress(userId);
@@ -119,13 +126,14 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
         const q = search.trim().toLowerCase();
         return dictionary.filter(e => {
             if (!matchesPos(e.p, posFilter)) return false;
+            if (topicFilter !== 'all' && e.t !== topicFilter) return false;
             if (statusFilter !== 'all' && getEntryStatus(entryKey(e), cardKeys, knownKeys) !== statusFilter) return false;
             if (q && !e.w.toLowerCase().includes(q) && !e.ru.toLowerCase().includes(q)) return false;
             return true;
         });
-    }, [dictionary, search, posFilter, statusFilter, cardKeys, knownKeys]);
+    }, [dictionary, search, posFilter, topicFilter, statusFilter, cardKeys, knownKeys]);
 
-    useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, posFilter, statusFilter]);
+    useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, posFilter, topicFilter, statusFilter]);
 
     const createCards = async (entries: FrequencyEntry[]) => {
         if (entries.length === 0 || generating) return;
@@ -209,7 +217,7 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
                 <header>
                     <h2 className="serif text-3xl font-bold text-slate-800 dark:text-white">С нуля</h2>
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Самые частые слова европейского португальского — по порядку. Словарь построен по частоте слов в португальских субтитрах, то есть в живой разговорной речи.
+                        Самые частые слова европейского португальского — по порядку. Основа — частоты живой речи (португальские субтитры), с поправкой на быт: слова из кафе, магазина, транспорта и у врача подняты выше, «киношная» лексика опущена.
                     </p>
                 </header>
 
@@ -299,6 +307,14 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
                                 </button>
                             ))}
                         </div>
+                        <div className="flex flex-wrap gap-1">
+                            <span className="self-center pr-1 text-xs font-bold text-slate-400">Темы:</span>
+                            {TOPICS.map(topic => (
+                                <button key={topic} onClick={() => setFocus(focus === topic ? 'all' : topic)} className={`rounded-full px-3 py-1 text-xs font-bold ${focus === topic ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-900/20 dark:text-sky-300'}`}>
+                                    {TOPIC_LABELS[topic]}
+                                </button>
+                            ))}
+                        </div>
 
                         {goalReached && (
                             <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
@@ -358,6 +374,10 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
                                 <option value="adj">Прилагательные</option>
                                 <option value="other">Остальное</option>
                             </select>
+                            <select value={topicFilter} onChange={e => setTopicFilter(e.target.value as 'all' | Topic)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                <option value="all">Все темы</option>
+                                {TOPICS.map(topic => <option key={topic} value={topic}>{TOPIC_LABELS[topic]}</option>)}
+                            </select>
                             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as StatusFilter)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                 <option value="all">Любой статус</option>
                                 <option value="new">Новые</option>
@@ -383,7 +403,7 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
                 )}
 
                 <p className="pb-4 text-center text-[11px] text-slate-400">
-                    Частоты: корпус субтитров OpenSubtitles (FrequencyWords, H. Dave). Отметки «знаю» хранятся на этом устройстве.
+                    Частоты: корпус субтитров OpenSubtitles (FrequencyWords, H. Dave) с поправками под быт. Отметки «знаю» хранятся на этом устройстве.
                 </p>
             </div>
         </div>

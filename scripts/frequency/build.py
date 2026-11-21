@@ -23,6 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LEMMA_DIR = Path(__file__).resolve().parent / "lemmas"
+WEIGHTS = Path(__file__).resolve().parent / "weights.txt"
 OUT = ROOT / "data" / "frequencyDictionary.json"
 
 ARTICLES = ("o ", "a ", "os ", "as ")
@@ -127,6 +128,34 @@ def load_lemmas() -> list[dict]:
     return entries
 
 
+def load_weights(entries: list[dict]) -> dict[int, tuple[float, str | None]]:
+    """weights.txt: @down <k> / @topic <code> <k>, then comma-separated lemmas."""
+    index = {e["word"]: i for i, e in enumerate(entries)}
+    result: dict[int, tuple[float, str | None]] = {}
+    factor, topic = 1.0, None
+    for raw in WEIGHTS.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("@"):
+            parts = line[1:].split()
+            if parts[0] == "down":
+                factor, topic = float(parts[1]), None
+            elif parts[0] == "topic":
+                topic, factor = parts[1], float(parts[2])
+            continue
+        for word in (w.strip() for w in line.split(",")):
+            if not word:
+                continue
+            if word not in index:
+                print(f"WARN weights: unknown lemma '{word}'", file=sys.stderr)
+                continue
+            if index[word] in result:
+                print(f"WARN weights: '{word}' listed twice", file=sys.stderr)
+            result[index[word]] = (factor, topic)
+    return result
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -172,7 +201,10 @@ def main() -> None:
             tokens = [t for t in re.split(r"[\s-]+", e["base"]) if t]
             scores[i] = min(freq.get(t, 0) for t in tokens) * 0.15 + sum(freq.get(f, 0) for f in e["extra"]) * 0.2
 
-    order = sorted(range(len(entries)), key=lambda i: -scores[i])
+    # Поправки под быт: ранжируем по скорректированной частоте, ipm остаётся честным
+    weights = load_weights(entries)
+    adjusted = [scores[i] * weights.get(i, (1.0, None))[0] for i in range(len(entries))]
+    order = sorted(range(len(entries)), key=lambda i: -adjusted[i])
     total = sum(freq.values())
     out = []
     for rank, i in enumerate(order, 1):
@@ -181,6 +213,9 @@ def main() -> None:
                 "ipm": round(scores[i] / total * 1_000_000, 1)}
         if e["irregular"] and e["pos"] == "verb":
             item["irr"] = True
+        topic = weights.get(i, (1.0, None))[1]
+        if topic:
+            item["t"] = topic
         out.append(item)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

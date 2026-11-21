@@ -16,7 +16,24 @@ export interface FrequencyEntry {
     ipm: number;
     /** Irregular verb */
     irr?: boolean;
+    /** Everyday topic (see scripts/frequency/weights.txt) */
+    t?: Topic;
 }
+
+export type Topic = 'social' | 'home' | 'food' | 'shop' | 'health' | 'transport' | 'admin' | 'time';
+
+export const TOPIC_LABELS: Record<Topic, string> = {
+    social: 'Вежливость',
+    home: 'Дом',
+    food: 'Еда и кафе',
+    shop: 'Магазин и деньги',
+    health: 'Здоровье',
+    transport: 'Транспорт и город',
+    admin: 'Документы и работа',
+    time: 'Время и погода',
+};
+
+export const TOPICS = Object.keys(TOPIC_LABELS) as Topic[];
 
 export const POS_LABELS: Record<PartOfSpeech, string> = {
     verb: 'глагол',
@@ -85,12 +102,14 @@ export const getEntryStatus = (key: string, cardKeys: Set<string>, knownKeys: Se
     return 'new';
 };
 
-export type BatchFocus = 'all' | 'verbs' | 'content';
+export type BatchFocus = 'all' | 'verbs' | 'content' | 'everyday' | Topic;
 
 export const matchesFocus = (entry: FrequencyEntry, focus: BatchFocus) => {
+    if (focus === 'all') return true;
     if (focus === 'verbs') return entry.p === 'verb';
     if (focus === 'content') return !FUNCTION_POS.includes(entry.p);
-    return true;
+    if (focus === 'everyday') return !!entry.t;
+    return entry.t === focus;
 };
 
 /** Next most frequent words the learner has neither in cards nor marked as known. */

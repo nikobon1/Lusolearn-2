@@ -641,3 +641,4 @@ a lista|noun|список|
 o pacote|noun|посылка, пакет|
 a encomenda|noun|заказ, посылка|
 o talho|noun|мясная лавка (Португалия)|
+a garganta|noun|горло|

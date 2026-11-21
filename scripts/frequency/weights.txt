@@ -1,0 +1,78 @@
+# Поправки к частоте под цель «быт в Португалии».
+# Субтитры завышают лексику боевиков и детективов, а бытовые слова (аптека, чек, автобус)
+# в кино встречаются реже, чем в жизни.
+#
+# Формат секции:  @down <коэффициент>          — понизить
+#                 @topic <код> <коэффициент>    — бытовая тема + повышение
+# Далее леммы через запятую ровно как в lemmas/*.txt (можно на нескольких строках).
+
+@down 0.3
+matar, o crime, a prisão, o exército, a guerra, disparar, atirar, a vítima, o tribunal, o juiz,
+a testemunha, o ladrão, investigar, prender, preso, lutar, atacar, o rei, a rainha, a princesa, o castelo,
+a magia, o anjo, o herói, o universo, a explosão, o golpe, a vingança, a ameaça, a defesa, o abrigo,
+a violência, o espírito, a alma, culpado, inocente, o processo, a justiça, a pista,
+a tempestade, poderoso, o génio, o ministro, a imprensa, a teoria, a política, o poder, a lei,
+a cirurgia, o cancro, ferido, a ferida
+
+@down 0.6
+morrer, a morte, o sangue, o polícia, o presidente, o governo, Deus, roubar, o medo,
+o perigo, perigoso, salvar, fugir, esconder, destruir, o segredo, a verdade, a mentira, mentir, a ordem
+
+@topic social 3
+bom dia, boa tarde, boa noite, por favor, se faz favor, de nada, com licença, até logo, até amanhã,
+tudo bem, obrigado, obrigada, desculpa, olá, adeus, tchau, se calhar, o vizinho, a vizinha
+
+@topic home 3
+a casa, o apartamento, o andar, o prédio, o quarto, a sala, a cozinha, a casa de banho, o banho, o duche,
+a porta, a janela, a chave, a cama, a mesa, a cadeira, o sofá, o armário, a gaveta, o espelho, a luz,
+a lâmpada, o frigorífico, o fogão, o forno, a máquina de lavar, a televisão, o telemóvel, o carregador,
+a tomada, o lixo, a renda, o senhorio, a mudança, a almofada, o lençol, o cobertor, a toalha, o sabonete,
+a escova de dentes, o papel higiénico, o aquecimento, o ar condicionado, a eletricidade, a internet,
+o elevador, a varanda, a escada, a avaria, limpar, lavar, arrumar, varrer, cozinhar, morar, alugar,
+consertar, acender, apagar, ligar, desligar, aquecer, abrir, fechar
+
+@topic food 3
+a comida, o pequeno-almoço, o almoço, jantar, o lanche, a refeição, o pão, o queijo, o fiambre,
+a manteiga, o leite, o ovo, a carne, o frango, o porco, o peixe, o bacalhau, a sardinha, o marisco,
+o arroz, a massa, a batata, as batatas fritas, a sopa, a salada, o legume, a fruta, a maçã, a laranja,
+a banana, o tomate, a cebola, o alho, a cenoura, o sal, o açúcar, o azeite, o óleo, o molho, o bolo,
+o gelado, o chocolate, o café, a bica, o galão, o chá, o sumo, o vinho, a cerveja, a imperial,
+a bebida, a água, o copo, a garrafa, a chávena, o prato, a colher, o garfo, a faca, o guardanapo,
+a conta, a ementa, o menu, o restaurante, a pastelaria, o pastel de nata, a gorjeta, a fome, a sede,
+comer, beber, almoçar, pedir, provar, cozer, assar, fritar, delicioso, saboroso, picante, salgado, o doce
+
+@topic shop 3
+o dinheiro, o euro, o cêntimo, o preço, a loja, o supermercado, o mercado, a padaria, o talho,
+a mercearia, o quiosque, o talão, o recibo, o troco, a caixa, o cartão, o multibanco, o banco, a compra,
+o saco, a promoção, o desconto, o tamanho, a fatura, o pagamento, a roupa, a camisa, a camisola,
+a t-shirt, as calças, a saia, o vestido, o casaco, o sapato, a sapatilha, a meia, o chapéu de chuva,
+a mala, a carteira, a lavandaria, o cabeleireiro, comprar, pagar, custar, vender, experimentar, trocar,
+devolver, gastar, poupar, barato, caro, grátis, gratuito, aberto, fechado
+
+@topic health 3
+a saúde, a doença, a dor, a febre, a gripe, a constipação, a tosse, o hospital, o centro de saúde,
+a farmácia, o medicamento, o remédio, o comprimido, a receita, a consulta, as urgências, a ambulância,
+o seguro, o médico, a médica, o enfermeiro, a enfermeira, o dentista, o farmacêutico, a vacina,
+a alergia, o atestado, marcar consulta, doente, doer, a cabeça, a barriga, o estômago, as costas,
+o dente, a garganta, cansado, grávida
+
+@topic transport 3
+o autocarro, o comboio, o metro, o elétrico, o táxi, a bicicleta, a mota, a estação, a paragem,
+o bilhete, o passe, o aeroporto, o avião, o voo, a bagagem, a viagem, o carro, a gasolina, o trânsito,
+o estacionamento, a boleia, conduzir, estacionar, apanhar, descer, atravessar, virar, a rua, a avenida,
+a praça, a esquina, o bairro, o centro, a esquerda, a direita, o semáforo, a passadeira, o passeio,
+o mapa, a direção, a estrada, a ponte, perto, longe, o hotel, a reserva, reservar
+
+@topic admin 3
+o passaporte, o documento, o formulário, assinar, preencher, as Finanças, a Segurança Social, a Câmara,
+a junta de freguesia, o NIF, o contrato, a autorização, a senha, a fila, o correio, os correios,
+a carta, a encomenda, o pacote, o código postal, a morada, o endereço, o registo, a licença,
+o horário, o email, a mensagem, o número, o nome, a data, a idade, obrigatório, enviar, receber,
+o emprego, o trabalho, o salário, o ordenado, a entrevista, a escola
+
+@topic time 2
+a hora, o minuto, o dia, a semana, o fim de semana, o mês, o ano, hoje, amanhã, ontem, cedo, tarde,
+a manhã, a noite, o meio-dia, a meia-noite, o feriado, as férias, a segunda-feira, a terça-feira,
+a quarta-feira, a quinta-feira, a sexta-feira, o sábado, o domingo, janeiro, fevereiro, março, abril,
+maio, junho, julho, agosto, setembro, outubro, novembro, dezembro, a primavera, o verão, o outono,
+o inverno, o tempo, a chuva, o sol, o frio, o calor
