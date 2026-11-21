@@ -9,12 +9,15 @@ import { useTheme } from './hooks/useTheme';
 import { useStudyState } from './hooks/useStudyState';
 import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
-import { Flashcard, ViewState } from './types';
+import { Flashcard, Folder, ViewState } from './types';
 import { getCurrentSession, signOutUser, subscribeAuthState } from './services/repositories/authRepository';
+import { createFolderRecord } from './services/repositories/foldersRepository';
+import { FREQUENCY_FOLDER_NAME } from './domain/frequencyDictionary';
 
 const StudyContainer = lazy(() => import('./components/StudyContainer'));
 const Creator = lazy(() => import('./components/Creator'));
 const StoryView = lazy(() => import('./components/StoryView'));
+const FrequencyPathView = lazy(() => import('./components/FrequencyPathView'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const StudyConfigModal = lazy(() => import('./components/StudyConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -38,7 +41,7 @@ export default function App() {
     const { theme, toggleTheme } = useTheme();
 
     const {
-        studyQueue, showStudyConfig, setShowStudyConfig, listModalConfig, setListModalConfig,
+        studyQueue, setStudyQueue, showStudyConfig, setShowStudyConfig, listModalConfig, setListModalConfig,
         handleStartStudy, handleStudySingleCard
     } = useStudyState(cards, setView);
 
@@ -69,6 +72,27 @@ export default function App() {
     const onCardsCreated = async (newCards: Flashcard[]) => {
         await addCards(newCards);
         setView(ViewState.Dashboard);
+    };
+
+    const isRealSession = !!session && session.user.email !== 'offline@demo.com';
+
+    // Folder for cards created from the frequency dictionary (created on first use)
+    const ensureFrequencyFolder = async (): Promise<string> => {
+        const existing = folders.find(f => f.name.toLowerCase() === FREQUENCY_FOLDER_NAME.toLowerCase());
+        if (existing) return existing.id;
+        const folder: Folder = { id: self.crypto.randomUUID(), name: FREQUENCY_FOLDER_NAME, createdAt: Date.now() };
+        setFolders(prev => [...prev, folder]);
+        if (isRealSession && session) {
+            const { error } = await createFolderRecord(folder.id, session.user.id, folder.name);
+            if (error) console.error('Failed to save frequency folder', error);
+        }
+        return folder.id;
+    };
+
+    const handleStudyCards = (toStudy: Flashcard[]) => {
+        if (toStudy.length === 0) return;
+        setStudyQueue(toStudy);
+        setView(ViewState.Study);
     };
 
     const dueCount = cards.filter(c => c.nextReviewDate <= Date.now()).length;
@@ -134,6 +158,18 @@ export default function App() {
                         </Suspense>
                     </div>
                 </div>
+            )}
+
+            {view === ViewState.Frequency && (
+                <Suspense fallback={<ScreenFallback />}>
+                    <FrequencyPathView
+                        cards={cards}
+                        userId={session?.user.id}
+                        onCardsCreated={addCards}
+                        ensureFolder={ensureFrequencyFolder}
+                        onStudyCards={handleStudyCards}
+                    />
+                </Suspense>
             )}
 
             {view === ViewState.StoryList && (

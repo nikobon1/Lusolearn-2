@@ -1,0 +1,302 @@
+# Глаголы. verb! = неправильный (формы перечислены явно), verb = правильный (формы генерируются)
+ser|verb!|быть (постоянное качество)|sou és é somos sois são era eras éramos eram fui foste foi fomos foram seja sejas sejamos sejam serei serás será seremos serão seria serias seríamos seriam sido sendo fosse fosses fôssemos fossem for fores formos forem fora
+estar|verb!|быть, находиться (временное состояние)|estou estás está estamos estão estava estavas estávamos estavam estive estiveste esteve estivemos estiveram esteja estejas estejamos estejam estarei estarás estará estaremos estarão estaria estado estando estivesse estivesses estivéssemos estivessem estiver estiveres estivermos estiverem
+ter|verb!|иметь; (ter de/que) быть должным|tenho tens tem temos têm tinha tinhas tínhamos tinham tive tiveste teve tivemos tiveram tenha tenhas tenhamos tenham terei terás terá teremos terão teria terias teríamos teriam tido tendo tivesse tivesses tivéssemos tivessem tiver tiveres tivermos tiverem teres termos terem
+haver|verb!|иметься (há — есть, имеется; тому назад)|há havia houve haja hajam haverá haveria havido houvesse houver hei hás hão hei-de
+ir|verb!|идти, ехать; (ir + инф.) собираться|vou vais vai vamos vão ia ias íamos iam fui foste foi fomos foram vá vás vamos vão irei irás irá iremos irão iria iriam ido indo fosse fosses fôssemos fossem for fores formos forem ires irmos irem
+fazer|verb!|делать|faço fazes faz fazemos fazem fazia fazias fazíamos faziam fiz fizeste fez fizemos fizeram faça faças façamos façam farei farás fará faremos farão faria farias faríamos fariam feito feita feitos feitas fazendo fizesse fizesses fizéssemos fizessem fizer fizeres fizermos fizerem fazeres fazermos fazerem fá-lo
+dizer|verb!|говорить, сказать|digo dizes diz dizemos dizem dizia dizias dizíamos diziam disse disseste dissemos disseram diga digas digamos digam direi dirás dirá diremos dirão diria dirias diríamos diriam dito dita dizendo dissesse dissessem disser disserem dizeres
+poder|verb!|мочь|posso podes pode podemos podem podia podias podíamos podiam pude pudeste pôde pudemos puderam possa possas possamos possam poderei poderás poderá poderemos poderão poderia poderias poderíamos poderiam podido pudesse pudesses pudéssemos pudessem puder puderes pudermos puderem podermos
+querer|verb!|хотеть|quero queres quer queremos querem queria querias queríamos queriam quis quiseste quisemos quiseram queira queiras queiramos queiram quererei quererá quereria querido quisesse quisesses quiséssemos quisessem quiser quiseres quisermos quiserem
+saber|verb!|знать (факт), уметь|sei sabes sabe sabemos sabem sabia sabias sabíamos sabiam soube soubeste soubemos souberam saiba saibas saibamos saibam saberei saberás saberá saberemos saberão saberia sabido sabendo soubesse soubessem souber souberem
+ver|verb!|видеть, смотреть|vejo vês vê vemos veem vêem via vias víamos viam vi viste viu vimos viram veja vejas vejamos vejam verei verás verá veremos verão veria visto vista vistos vendo visse vissem vir vires virmos virem
+vir|verb!|приходить, приезжать|venho vens vem vimos vêm vinha vinhas vínhamos vinham vim vieste veio viemos vieram venha venhas venhamos venham virei virás virá viremos virão viria vindo viesse viessem vier vierem
+dar|verb!|давать|dou dás dá damos dão dava davas dávamos davam dei deste deu demos deram dê dês dêmos dêem deem darei darás dará daremos darão daria dado dada dando desse dessem der derem
+pôr|verb!|класть, ставить|ponho pões põe pomos põem punha punhas púnhamos punham pus puseste pôs pusemos puseram ponha ponhas ponhamos ponham porei porás porá poremos porão poria posto posta pondo pusesse puser pusermos
+trazer|verb!|приносить, привозить|trago trazes traz trazemos trazem trazia traziam trouxe trouxeste trouxemos trouxeram traga tragas tragamos tragam trarei trarás trará traria trazido trazendo trouxesse trouxer
+ler|verb!|читать|leio lês lê lemos leem lêem lia lias líamos liam li leste leu lemos leram leia leias leiam lerei lerá leria lido lendo
+crer|verb!|верить, полагать|creio crês crê cremos creem crêem cria criam cri creu creia crido
+rir|verb!|смеяться|rio ris ri rimos riem ria riam ri riu riram ria rido rindo
+ouvir|verb!|слышать, слушать|ouço ouves ouve ouvimos ouvem ouvia ouvias ouvíamos ouviam ouvi ouviste ouviu ouvimos ouviram ouça ouças ouçamos ouçam ouvirei ouvirá ouviria ouvido ouvida ouvindo ouvisse ouvir-me
+pedir|verb!|просить, заказывать|peço pedes pede pedimos pedem pedia pediam pedi pediste pediu pedimos pediram peça peças peçamos peçam pedirei pedirá pediria pedido pedindo pedisse
+perder|verb!|терять; опаздывать (на транспорт)|perco perdes perde perdemos perdem perdia perdiam perdi perdeste perdeu perdemos perderam perca percas percam perderei perderá perderia perdido perdida perdendo perdesse
+dormir|verb!|спать|durmo dormes dorme dormimos dormem dormia dormiam dormi dormiste dormiu dormiram durma durmas durmam dormirei dormirá dormiria dormido dormindo
+sentir|verb!|чувствовать|sinto sentes sente sentimos sentem sentia sentiam senti sentiste sentiu sentiram sinta sintas sintam sentirei sentirá sentiria sentido sentindo sentisse
+seguir|verb!|следовать, идти за|sigo segues segue seguimos seguem seguia seguiam segui seguiste seguiu seguiram siga sigas sigam seguirei seguirá seguiria seguido seguindo
+servir|verb!|служить; подавать (еду); подходить|sirvo serves serve servimos servem servia serviam servi serviu serviram sirva sirvam servirá serviria servido
+preferir|verb!|предпочитать|prefiro preferes prefere preferimos preferem preferia preferi preferiu prefira prefiram preferirá preferiria preferido
+mentir|verb!|лгать|minto mentes mente mentimos mentem mentia menti mentiste mentiu mentiram minta mentido mentindo
+subir|verb!|подниматься|subo sobes sobe subimos sobem subia subi subiu subiram suba subam subirá subido subindo
+fugir|verb!|убегать|fujo foges foge fugimos fogem fugia fugi fugiste fugiu fugiram fuja fujam fugirá fugido fugindo
+cair|verb!|падать|caio cais cai caímos caem caía caíam caí caíste caiu caíram caia caiam cairá cairia caído caindo
+sair|verb!|выходить, уходить|saio sais sai saímos saem saía saías saíamos saíam saí saíste saiu saímos saíram saia saias saiamos saiam sairei sairás sairá sairemos sairão sairia saído saindo saísse
+cobrir|verb!|покрывать|cubro cobres cobre cobrimos cobrem cobri cobriu cubra coberto coberta cobrindo
+descobrir|verb!|обнаружить, узнать|descubro descobres descobre descobrimos descobrem descobria descobri descobriste descobriu descobrimos descobriram descubra descubram descobrirei descobrirá descoberto descoberta descobrindo
+abrir|verb!|открывать|abro abres abre abrimos abrem abria abri abriste abriu abriram abra abram abrirei abrirá abriria aberto aberta abertos abertas abrindo
+escrever|verb!|писать|escrevo escreves escreve escrevemos escrevem escrevia escrevi escreveste escreveu escreveram escreva escrevam escreverei escreverá escreveria escrito escrita escritos escrevendo
+morrer|verb!|умирать|morro morres morre morremos morrem morria morri morreste morreu morremos morreram morra morram morrerei morrerá morreria morrido morto morta mortos mortas morrendo
+valer|verb!|стоить, иметь ценность|valho vales vale valemos valem valia valeu valha valerá valeria valido
+caber|verb!|помещаться|caibo cabes cabe cabemos cabem cabia coube caiba caberá
+medir|verb!|измерять|meço medes mede medimos medem medi mediu meça medido
+conseguir|verb!|суметь, получить, удаться|consigo consegues consegue conseguimos conseguem conseguia conseguias conseguíamos conseguiam consegui conseguiste conseguiu conseguimos conseguiram consiga consigas consigamos consigam conseguirei conseguirás conseguirá conseguiremos conseguirão conseguiria conseguido conseguindo conseguisse conseguires conseguirmos
+vestir|verb!|одевать, надевать|visto vestes veste vestimos vestem vestia vesti vestiu vista vistam vestido vestindo
+despir|verb!|раздевать, снимать (одежду)|dispo despes despe despi despiu dispa despido
+repetir|verb!|повторять|repito repetes repete repetimos repetem repeti repetiu repita repitam repetido
+divertir|verb!|развлекать (divertir-se — веселиться)|divirto divertes diverte divertimos divertem diverti divertiu divirta divertido divertida
+construir|verb!|строить|construo constróis constrói construímos constroem construía construí construiu construíram construa construído construindo
+destruir|verb!|разрушать|destruo destróis destrói destruímos destroem destruí destruiu destruíram destrua destruído destruída destruindo
+dirigir|verb!|направлять; водить (машину); руководить|dirijo diriges dirige dirigimos dirigem dirigi dirigiu dirija dirigido dirigindo
+corrigir|verb!|исправлять|corrijo corriges corrige corrigimos corrigem corrigi corrigiu corrija corrigido
+proteger|verb!|защищать|protejo proteges protege protegemos protegem protegia protegi protegeu proteja protegido protegendo
+escolher|verb!|выбирать|escolho escolhes escolhe escolhemos escolhem escolhia escolhi escolheste escolheu escolheram escolha escolham escolherei escolherá escolhido escolhida escolhendo
+receber|verb!|получать|recebo recebes recebe recebemos recebem recebia recebi recebeste recebeu recebemos receberam receba recebam receberá receberia recebido recebida recebendo
+conhecer|verb!|знать (человека, место), знакомиться|conheço conheces conhece conhecemos conhecem conhecia conhecias conhecíamos conheciam conheci conheceste conheceu conhecemos conheceram conheça conheças conheçam conhecerei conhecerá conheceria conhecido conhecida conhecidos conhecendo
+parecer|verb!|казаться, быть похожим|pareço pareces parece parecemos parecem parecia pareciam pareci pareceu pareceram pareça pareçam parecerá pareceria parecido parecida parecendo
+acontecer|verb!|случаться, происходить|acontece acontecem acontecia aconteciam aconteceu aconteceram aconteça aconteçam acontecerá aconteceria acontecido acontecendo
+esquecer|verb!|забывать|esqueço esqueces esquece esquecemos esquecem esquecia esqueci esqueceste esqueceu esqueceram esqueça esqueças esqueçam esquecerei esquecerá esquecido esquecida esquecendo
+merecer|verb!|заслуживать|mereço mereces merece merecemos merecem mereci mereceu mereça merecido
+oferecer|verb!|предлагать; дарить|ofereço ofereces oferece oferecemos oferecem ofereci ofereceu ofereça oferecido oferecida
+crescer|verb!|расти|cresço cresces cresce crescemos crescem crescia cresci cresceu cresça crescido crescendo
+aparecer|verb!|появляться|apareço apareces aparece aparecemos aparecem aparecia apareci apareceste apareceu apareceram apareça apareçam aparecerá aparecido aparecendo
+desaparecer|verb!|исчезать|desapareço desapareces desaparece desaparecem desaparecia desapareci desapareceu desapareceram desapareça desaparecido desaparecida desaparecendo
+agradecer|verb!|благодарить|agradeço agradeces agradece agradecemos agradecem agradeci agradeceu agradeça agradecido agradecida
+reconhecer|verb!|узнавать; признавать|reconheço reconheces reconhece reconhecemos reconhecem reconheci reconheceu reconheça reconhecido
+obedecer|verb!|слушаться|obedeço obedeces obedece obedecem obedeci obedeceu obedeça
+começar|verb!|начинать|começo começas começa começamos começam começava começavam comecei começaste começou começámos começaram comece comeces comecemos comecem começarei começará começaria começado começando
+chegar|verb!|приезжать, приходить, прибывать; хватать|chego chegas chega chegamos chegam chegava chegavam cheguei chegaste chegou chegámos chegaram chegue chegues cheguemos cheguem chegarei chegará chegaremos chegaria chegado chegada chegando chegarmos
+ficar|verb!|оставаться; становиться; находиться|fico ficas fica ficamos ficam ficava ficavam fiquei ficaste ficou ficámos ficaram fique fiques fiquemos fiquem ficarei ficarás ficará ficaremos ficarão ficaria ficado ficando ficares
+pagar|verb!|платить|pago pagas paga pagamos pagam pagava paguei pagaste pagou pagaram pague pagues paguem pagarei pagará pagaria pagado pagando
+ligar|verb!|звонить; включать; связывать|ligo ligas liga ligamos ligam ligava liguei ligaste ligou ligaram ligue ligues liguem ligarei ligará ligaria ligado ligada ligando
+explicar|verb!|объяснять|explico explicas explica explicamos explicam expliquei explicaste explicou explicaram explique expliquem explicarei explicará explicado
+tocar|verb!|трогать; играть (на инструменте); звонить (о звонке)|toco tocas toca tocamos tocam tocava toquei tocaste tocou tocaram toque toques toquem tocarei tocado tocando
+buscar|verb!|искать; забирать (ir buscar — сходить за)|busco buscas busca buscamos buscam busquei buscou busque busquem buscarei buscado
+almoçar|verb!|обедать|almoço almoças almoça almoçamos almoçam almocei almoçou almoce almoçado
+dançar|verb!|танцевать|danço danças dança dançamos dançam dancei dançou dance dancem dançado dançando
+jogar|verb!|играть (в игру)|jogo jogas joga jogamos jogam jogava joguei jogaste jogou jogaram jogue joguem jogarei jogará jogado jogando
+brincar|verb!|играть (о детях); шутить|brinco brincas brinca brincamos brincam brincava brinquei brincou brinque brincando
+tirar|verb|снимать, вынимать, брать; (tirar uma foto) фотографировать|
+achar|verb|считать, думать; находить|
+falar|verb|говорить, разговаривать|
+pensar|verb|думать|
+precisar|verb|нуждаться (precisar de — нужно)|
+esperar|verb|ждать; надеяться|
+passar|verb|проходить, проводить (время), передавать|
+deixar|verb|оставлять; позволять|
+levar|verb|брать с собой, нести, отвозить|
+gostar|verb|нравиться (gostar de — любить)|
+trabalhar|verb|работать|
+tentar|verb|пытаться, пробовать|
+chamar|verb|звать, называть (chamar-se — называться)|chamo-me chama-se
+voltar|verb|возвращаться; (voltar a + инф.) снова делать|
+olhar|verb|смотреть|olhe olhem
+entrar|verb|входить|
+ajudar|verb|помогать|
+encontrar|verb|находить; встречать|
+acabar|verb|заканчивать; (acabar de + инф.) только что сделать|
+matar|verb|убивать|
+mudar|verb|менять, переезжать|
+usar|verb|использовать; носить (одежду)|
+morar|verb|жить, проживать (где-то)|
+viver|verb|жить|
+comer|verb|есть, кушать|
+beber|verb|пить|
+correr|verb|бегать, бежать|
+responder|verb|отвечать|
+entender|verb|понимать|
+aprender|verb|учить(ся), узнавать|
+vender|verb|продавать|
+comprar|verb|покупать|
+partir|verb|уезжать; ломать, разбивать|
+decidir|verb|решать|
+existir|verb|существовать|
+permitir|verb|позволять|
+assistir|verb|смотреть (assistir a), присутствовать|
+andar|verb|ходить; ездить (de carro); (andar a + инф.) заниматься чем-то|
+acordar|verb|просыпаться, будить|
+deitar|verb|класть (deitar-se — ложиться)|
+levantar|verb|поднимать (levantar-se — вставать)|levanta-te
+lavar|verb|мыть, стирать|
+limpar|verb|чистить, убирать|
+cozinhar|verb|готовить (еду)|
+jantar|verb|ужинать; ужин (o jantar)|jantares
+tomar|verb|брать, принимать (tomar banho, tomar café)|
+fechar|verb|закрывать|
+mostrar|verb|показывать|
+contar|verb|считать; рассказывать|
+perguntar|verb|спрашивать|
+estudar|verb|учиться, изучать|
+ensinar|verb|учить, преподавать|
+chorar|verb|плакать|
+cantar|verb|петь|
+nadar|verb|плавать|
+viajar|verb|путешествовать|
+visitar|verb|навещать, посещать|
+preparar|verb|готовить, подготавливать|
+guardar|verb|хранить, убирать (на место)|
+procurar|verb|искать|
+lembrar|verb|помнить, напоминать (lembrar-se de — вспомнить)|lembro-me lembras-te lembra-te lembra-se lembrem-se
+gritar|verb|кричать|
+parar|verb|останавливать(ся)|pára
+continuar|verb|продолжать|
+mandar|verb|посылать; приказывать|
+enviar|verb|отправлять|
+salvar|verb|спасать|
+amar|verb|любить|amo-te
+casar|verb|жениться, выходить замуж|
+cuidar|verb|заботиться (cuidar de)|
+ganhar|verb|выигрывать; зарабатывать|
+gastar|verb|тратить|
+custar|verb|стоить (о цене); быть трудным|
+reservar|verb|бронировать|
+alugar|verb|арендовать, снимать (жильё)|
+apanhar|verb|ловить; садиться на (транспорт) — Португалия|
+conduzir|verb!|водить (машину) — Португалия|conduzo conduzes conduz conduzimos conduzem conduzia conduzi conduziu conduza conduzido conduzindo
+estacionar|verb|парковать(ся)|
+atravessar|verb|переходить, пересекать|
+virar|verb|поворачивать|
+descer|verb!|спускаться; выходить (из транспорта)|desço desces desce descemos descem descia desci desceu desça desçam descerá descido descendo
+experimentar|verb|пробовать, примерять|
+provar|verb|пробовать (на вкус); доказывать|
+escutar|verb|слушать|escuta escute
+sorrir|verb!|улыбаться|sorrio sorris sorri sorrimos sorriem sorria sorriu sorria sorrido sorrindo
+beijar|verb|целовать|
+abraçar|verb!|обнимать|abraço abraças abraça abraçamos abraçam abracei abraçou abrace abraçado
+sonhar|verb|мечтать, видеть сны|
+acreditar|verb|верить|
+confiar|verb|доверять|
+importar|verb|быть важным (importa-se? — вы не против?); импортировать|importa-se importas-te
+interessar|verb|интересовать|
+preocupar|verb|беспокоить (preocupar-se — волноваться)|preocupes preocupe
+ocupar|verb|занимать|
+faltar|verb|не хватать; отсутствовать|
+sobrar|verb|оставаться (лишним)|
+bastar|verb|хватать, быть достаточным|basta
+funcionar|verb|работать (о механизмах), функционировать|
+resolver|verb|решать (проблему)|
+aceitar|verb|принимать, соглашаться|
+recusar|verb|отказывать(ся)|
+escapar|verb|сбегать, ускользать|
+evitar|verb|избегать|
+desculpar|verb|извинять, прощать|
+perdoar|verb|прощать|
+odiar|verb!|ненавидеть|odeio odeias odeia odiamos odeiam odiava odiei odiou odeie odiado
+trocar|verb!|менять, обменивать|troco trocas troca trocamos trocam troquei trocou troque troquem trocar trocado
+marcar|verb!|отмечать; назначать (встречу); забивать (гол)|marco marcas marca marcamos marcam marquei marcou marque marquem marcado marcada
+cancelar|verb|отменять|
+lutar|verb|бороться, драться|
+atirar|verb|бросать; стрелять|
+disparar|verb|стрелять|
+roubar|verb|красть, грабить|
+partilhar|verb|делиться (Португалия)|
+juntar|verb|соединять, собирать (juntar-se — присоединиться)|
+separar|verb|разделять|
+acompanhar|verb|сопровождать|
+apresentar|verb|представлять, знакомить|
+convidar|verb|приглашать|
+combinar|verb|договариваться; сочетать|combinado
+participar|verb|участвовать|
+organizar|verb|организовывать|
+arranjar|verb|доставать, находить; чинить|
+reparar|verb|чинить; замечать (reparar em)|
+consertar|verb|чинить|
+pintar|verb|красить, рисовать|
+desenhar|verb|рисовать, проектировать|
+fumar|verb|курить|
+respirar|verb|дышать|
+descansar|verb|отдыхать|
+relaxar|verb|расслабляться|
+cansar|verb|утомлять (cansar-se — уставать)|
+magoar|verb|причинять боль, ранить|
+doer|verb!|болеть (о части тела)|dói doem doía doeu doa doído
+curar|verb|лечить, вылечивать|
+tratar|verb|обращаться; лечить; заниматься (tratar de)|trata-se
+operar|verb|оперировать; управлять|
+sentar|verb|сажать (sentar-se — садиться)|senta-te sente-se
+caminhar|verb|идти пешком, гулять|
+passear|verb!|гулять, прогуливаться|passeio passeias passeia passeamos passeiam passeei passeou passeie passeado passeando
+saltar|verb|прыгать|
+voar|verb|летать|
+nascer|verb!|рождаться|nasço nasces nasce nascemos nascem nascia nasci nasceste nasceu nasceram nasça nascido nascida nascendo
+envelhecer|verb!|стареть|envelheço envelhece envelheci envelheceu envelhecido
+atender|verb|отвечать (на звонок), обслуживать|
+desligar|verb!|выключать; вешать трубку|desligo desligas desliga desligamos desligam desliguei desligou desligue desliguem desligado
+carregar|verb!|заряжать; нажимать; нести (груз)|carrego carregas carrega carregamos carregam carreguei carregou carregue carregado
+mexer|verb|шевелить, трогать; мешать (еду)|mexe-te
+cortar|verb|резать, стричь|
+quebrar|verb|ломать, разбивать|
+queimar|verb|жечь, обжигать|
+cheirar|verb|пахнуть; нюхать|cheira
+encher|verb|наполнять|
+esvaziar|verb|опустошать|
+aquecer|verb!|нагревать, разогревать|aqueço aqueces aquece aquecemos aquecem aqueci aqueceu aqueça aquecido
+arrefecer|verb!|остывать, охлаждать|arrefece arrefeceu arrefecido
+cozer|verb|варить|
+assar|verb|запекать, жарить (в духовке)|
+fritar|verb|жарить (на сковороде)|
+misturar|verb|смешивать|
+encomendar|verb|заказывать (товар)|
+entregar|verb!|доставлять, вручать|entrego entregas entrega entregamos entregam entreguei entregou entregue entreguem entregado
+devolver|verb|возвращать (вещь)|
+emprestar|verb|одалживать (кому-то)|
+pedir emprestado|phrase|занять, взять взаймы|
+poupar|verb|экономить, копить|
+dever|verb|быть должным; (dever + инф.) должно быть|
+costumar|verb|иметь обыкновение (costumo — я обычно)|
+conversar|verb|беседовать|
+discutir|verb|обсуждать; спорить|
+concordar|verb|соглашаться|
+negar|verb!|отрицать|nego negas nega negamos negam neguei negou negue negado
+prometer|verb|обещать|
+jurar|verb|клясться|
+avisar|verb|предупреждать, извещать|
+informar|verb|информировать|
+comunicar|verb!|сообщать|comunico comunica comuniquei comunicou comunique comunicado
+imaginar|verb|представлять, воображать|
+notar|verb|замечать|
+perceber|verb|понимать (Португалия); замечать|
+compreender|verb|понимать|
+treinar|verb|тренироваться|
+praticar|verb!|практиковать, заниматься (спортом)|pratico praticas pratica praticamos praticam pratiquei praticou pratique praticado
+chover|verb|идти (о дожде)|chove choveu chovia
+nevar|verb|идти (о снеге)|neva
+brilhar|verb|сиять, светить|
+terminar|verb|заканчивать|
+iniciar|verb|начинать|
+melhorar|verb|улучшать(ся)|
+piorar|verb|ухудшать(ся)|
+aumentar|verb|увеличивать|
+diminuir|verb!|уменьшать|diminuo diminui diminuiu diminua diminuído
+habitar|verb|населять, жить|
+instalar|verb|устанавливать|
+arrumar|verb|убирать, приводить в порядок|
+varrer|verb|подметать|
+regar|verb!|поливать|rego regas rega regamos regam reguei regou regue regado
+plantar|verb|сажать (растения)|
+apagar|verb!|гасить, выключать; стирать|apago apagas apaga apagamos apagam apaguei apagou apague apagado
+acender|verb|зажигать, включать (свет)|
+abrir mão|phrase|отказаться от|
+mergulhar|verb|нырять|
+pescar|verb!|ловить рыбу|pesco pescas pesca pescamos pescam pesquei pescou pesque pescado
+apostar|verb|ставить, держать пари|aposto
+duvidar|verb|сомневаться|duvido
+desistir|verb|сдаваться, бросать (desistir de)|
+insistir|verb|настаивать|
+resistir|verb|сопротивляться|
+sobreviver|verb|выживать|
+sofrer|verb|страдать|
+esconder|verb|прятать|
+defender|verb|защищать|
+atacar|verb!|нападать|ataco atacas ataca atacamos atacam ataquei atacou ataque atacado
+vencer|verb!|побеждать|venço vences vence vencemos vencem venci venceu vença vencido
+falhar|verb|проваливаться, не удаваться; промахиваться|
+errar|verb|ошибаться|
+acertar|verb|попадать; угадывать|
+adivinhar|verb|угадывать|adivinha
+calçar|verb!|обувать|calço calças calça calcei calçou calce calçado
+pentear|verb!|причёсывать|penteio penteia penteei penteou penteado
+barbear|verb!|брить|barbeio barbeia barbeei barbeou barbeado
+tomar banho|phrase|принимать душ/ванну|
+fazer compras|phrase|делать покупки|
+pôr a mesa|phrase|накрывать на стол|
+estar com fome|phrase|быть голодным|
+ter saudades|phrase|скучать (ter saudades de)|saudades

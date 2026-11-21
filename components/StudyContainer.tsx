@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Flashcard, Difficulty } from '../types';
 import { TrophyIcon, HomeIcon } from './Icons';
 import FlashcardView from './FlashcardView';
 import { updateFlashcardSrs } from '../services/repositories/flashcardsRepository';
+import { chooseExercise } from '../domain/reviewExercise';
 
 type ReviewRating = 'again' | 'hard' | 'good' | 'easy';
 
@@ -17,6 +18,15 @@ interface StudyContainerProps {
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
+
+/** A card answered "again" comes back after this many other cards in the same session. */
+const RELEARN_GAP = 4;
+const MAX_RELEARN_ATTEMPTS = 2;
+
+interface QueueItem {
+    card: Flashcard;
+    attempt: number;
+}
 
 const clampEase = (value: number) => Math.min(3, Math.max(1.3, value));
 
@@ -98,11 +108,19 @@ const getReviewOutcome = (card: Flashcard, rating: ReviewRating) => {
 const StudyContainer: React.FC<StudyContainerProps> = ({
     cards, onComplete, onUpdateCard, onProgress, userId
 }) => {
+    const [queue, setQueue] = useState<QueueItem[]>(() => cards.map(card => ({ card, attempt: 0 })));
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
+    const [relearned, setRelearned] = useState(0);
+
+    const current = queue[currentIndex];
+    const exercise = useMemo(
+        () => current ? chooseExercise(current.card, current.attempt) : { type: 'recognition' as const },
+        [current]
+    );
 
     const handleResult = async (rating: ReviewRating) => {
-        const currentCard = cards[currentIndex];
+        const currentCard = current.card;
         const outcome = getReviewOutcome(currentCard, rating);
 
         const updatedCard = {
@@ -129,7 +147,16 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
             });
         }
 
-        if (currentIndex < cards.length - 1) {
+        // Forgotten card: show it again a few cards later in this session
+        let nextQueue = queue;
+        if (rating === 'again' && current.attempt < MAX_RELEARN_ATTEMPTS) {
+            const insertAt = Math.min(currentIndex + 1 + RELEARN_GAP, queue.length);
+            nextQueue = [...queue.slice(0, insertAt), { card: updatedCard, attempt: current.attempt + 1 }, ...queue.slice(insertAt)];
+            setQueue(nextQueue);
+            setRelearned(n => n + 1);
+        }
+
+        if (currentIndex < nextQueue.length - 1) {
             setCurrentIndex(prev => prev + 1);
         } else {
             setIsFinished(true);
@@ -144,7 +171,7 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
                 </div>
                 <h2 className="mb-2 text-2xl font-bold text-slate-800 dark:text-white">Сессия завершена!</h2>
                 <p className="mb-8 max-w-xs text-slate-500 dark:text-slate-400">
-                    Вы повторили {cards.length} слов(а). Отличная работа!
+                    Вы повторили {cards.length} слов(а){relearned > 0 ? `, ещё ${relearned} раз(а) вернулись к трудным` : ''}. Отличная работа!
                 </p>
                 <button
                     onClick={onComplete}
@@ -159,7 +186,9 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
     return (
         <div className="h-full w-full max-w-md md:h-auto md:max-h-[85vh] md:max-w-lg md:aspect-[3/4] lg:max-w-xl">
             <FlashcardView
-                card={cards[currentIndex]}
+                key={`${current.card.id}-${current.attempt}`}
+                card={current.card}
+                exercise={exercise}
                 onResult={handleResult}
                 onBack={onComplete}
                 onUpdate={onUpdateCard}

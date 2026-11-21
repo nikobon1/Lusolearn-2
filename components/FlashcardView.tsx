@@ -1,18 +1,38 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Flashcard, Example, Pattern } from '../types';
-import { VolumeIcon, BookIcon, BrainIcon, XIcon, HomeIcon, GridIcon, LoaderIcon, MicIcon } from './Icons';
+import { VolumeIcon, BookIcon, XIcon, HomeIcon, GridIcon, LoaderIcon, MicIcon } from './Icons';
 import { playAudio, loadAudio, getOrGenerateAudio, preloadAudio, translateExplanationToRussian } from '../services/geminiService';
 import { useSpeechRecording } from '../hooks/useSpeechRecording';
+import { Exercise } from '../domain/reviewExercise';
+import ReviewFront, { AnswerResult } from './ReviewFront';
+
+type Rating = 'again' | 'hard' | 'good' | 'easy';
+
+const RATING_BUTTONS: { rating: Rating; label: string; base: string; ring: string }[] = [
+    { rating: 'again', label: 'Не вспомнил', base: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 border-rose-100 dark:border-rose-800/50', ring: 'ring-rose-400' },
+    { rating: 'hard', label: 'С трудом', base: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 border-amber-100 dark:border-amber-800/50', ring: 'ring-amber-400' },
+    { rating: 'good', label: 'Вспомнил', base: 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 border-slate-200 dark:border-slate-600', ring: 'ring-slate-400' },
+    { rating: 'easy', label: 'Легко', base: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border-emerald-100 dark:border-emerald-800/50', ring: 'ring-emerald-400' },
+];
+
+const suggestedRating = (result: AnswerResult | null): Rating | null => {
+    if (!result) return null;
+    if (result.verdict === 'correct') return 'good';
+    if (result.verdict === 'almost') return 'hard';
+    return 'again';
+};
 
 interface Props {
     card: Flashcard;
+    exercise: Exercise;
     onResult: (rating: 'again' | 'hard' | 'good' | 'easy') => void;
     onBack: () => void;
     onUpdate: (card: Flashcard) => void;
 }
 
-const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) => {
+const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUpdate }) => {
     const [isFlipped, setIsFlipped] = useState(false);
+    const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
     // Track which audio source is currently active: 'main' | 'example' | null
     const [playingTarget, setPlayingTarget] = useState<'main' | 'example' | null>(null);
     const [selectedPattern, setSelectedPattern] = useState<Pattern | null>(null);
@@ -44,6 +64,7 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
     // Reset state when card changes
     useEffect(() => {
         setIsFlipped(false);
+        setAnswerResult(null);
         setSelectedPattern(null);
         setSelectedPatternExplanation('');
         setPlaybackSpeed(1.0);
@@ -193,37 +214,28 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
             {/* CARD CONTENT AREA */}
             <div className="flex-1 relative overflow-hidden flex flex-col">
 
-                {/* FRONT SIDE (Image & Word) */}
+                {/* FRONT SIDE: exercise (recognition / cloze / production) */}
                 {!isFlipped && (
-                    <div
-                        className="absolute inset-0 flex flex-col cursor-pointer bg-white dark:bg-slate-800"
-                        onClick={() => setIsFlipped(true)}
-                    >
-                        {/* Image Top Half */}
-                        <div className="h-[45%] relative overflow-hidden bg-slate-100 dark:bg-slate-900">
-                            {card.imageUrl ? (
-                                <img src={card.imageUrl} alt={card.originalTerm} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20">
-                                    <BrainIcon className="w-24 h-24 text-emerald-200 dark:text-emerald-800" />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Text Bottom Half */}
-                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white dark:bg-slate-800">
-                            <h2 className="text-4xl font-bold text-slate-800 dark:text-white mb-3">{card.originalTerm}</h2>
-                            <p className="text-xl text-slate-500 dark:text-slate-400">{card.translation}</p>
-                            <p className="mt-8 text-xs text-slate-300 dark:text-slate-600 uppercase tracking-widest">Нажмите, чтобы перевернуть</p>
-                        </div>
-                    </div>
+                    <ReviewFront
+                        card={card}
+                        exercise={exercise}
+                        isPlaying={playingTarget === 'main'}
+                        onPlayWord={handleMainAudio}
+                        onReveal={(result) => {
+                            if (exercise.type !== 'recognition') {
+                                const expected = exercise.type === 'cloze' ? exercise.answer : card.originalTerm;
+                                setAnswerResult(result ?? { verdict: 'wrong', given: '', expected });
+                            }
+                            setIsFlipped(true);
+                        }}
+                    />
                 )}
 
                 {/* BACK SIDE (Details) */}
                 {isFlipped && (
                     <div className="absolute inset-0 bg-white dark:bg-slate-800 flex flex-col animate-in fade-in duration-300">
                         {/* Header Area with Padding Top */}
-                        <div className="pt-20 px-6 pb-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer" onClick={() => setIsFlipped(false)}>
+                        <div className={`pt-20 px-6 pb-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between bg-slate-50/50 dark:bg-slate-800/50 ${exercise.type === 'recognition' ? 'cursor-pointer' : ''}`} onClick={() => { if (exercise.type === 'recognition') setIsFlipped(false); }}>
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">{card.originalTerm}</h2>
                                 <p className="text-slate-500 dark:text-slate-400 text-lg">{card.translation}</p>
@@ -263,6 +275,25 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
 
                         {/* Scrollable Content */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+                            {answerResult && (
+                                <div className={`p-4 rounded-2xl border ${answerResult.verdict === 'correct' ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800' : answerResult.verdict === 'almost' ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800'}`}>
+                                    <p className={`font-bold ${answerResult.verdict === 'correct' ? 'text-emerald-700 dark:text-emerald-300' : answerResult.verdict === 'almost' ? 'text-amber-700 dark:text-amber-300' : 'text-rose-700 dark:text-rose-300'}`}>
+                                        {answerResult.verdict === 'correct' ? '✓ Верно!' : answerResult.verdict === 'almost' ? '≈ Почти! Обратите внимание на написание' : answerResult.given ? '✗ Не совсем' : 'Правильный ответ'}
+                                    </p>
+                                    {answerResult.verdict !== 'correct' && (
+                                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                                            Правильно: <span className="font-bold text-slate-800 dark:text-white">{answerResult.expected}</span>
+                                            {answerResult.given && <> · {answerResult.spoken ? 'распознано' : 'ваш ответ'}: <span className="line-through decoration-rose-400">{answerResult.given}</span></>}
+                                        </p>
+                                    )}
+                                    {exercise.type === 'cloze' && (
+                                        <p className="mt-2 font-serif text-lg text-slate-800 dark:text-slate-100">
+                                            {exercise.before}<span className="font-bold text-emerald-700 dark:text-emerald-400 underline decoration-2 underline-offset-4">{exercise.answer}</span>{exercise.after}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Definition */}
                             <div>
@@ -325,30 +356,15 @@ const FlashcardView: React.FC<Props> = ({ card, onResult, onBack, onUpdate }) =>
 
                         {/* ACTION BUTTONS (Only on Back) */}
                         <div className="absolute bottom-0 left-0 w-full p-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur border-t border-slate-100 dark:border-slate-700 grid grid-cols-2 gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-                            <button
-                                onClick={() => onResult('again')}
-                                className="py-3.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 font-bold rounded-2xl hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors border border-rose-100 dark:border-rose-800/50"
-                            >
-                                Учить
-                            </button>
-                            <button
-                                onClick={() => onResult('hard')}
-                                className="py-3.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold rounded-2xl hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors border border-amber-100 dark:border-amber-800/50"
-                            >
-                                Трудно
-                            </button>
-                            <button
-                                onClick={() => onResult('good')}
-                                className="py-3.5 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600"
-                            >
-                                Нормально
-                            </button>
-                            <button
-                                onClick={() => onResult('easy')}
-                                className="py-3.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 font-bold rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors border border-emerald-100 dark:border-emerald-800/50"
-                            >
-                                Запомнил
-                            </button>
+                            {RATING_BUTTONS.map(({ rating, label, base, ring }) => (
+                                <button
+                                    key={rating}
+                                    onClick={() => onResult(rating)}
+                                    className={`py-3.5 font-bold rounded-2xl transition-colors border ${base} ${suggestedRating(answerResult) === rating ? `ring-2 ring-offset-2 dark:ring-offset-slate-800 ${ring}` : ''}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 )}

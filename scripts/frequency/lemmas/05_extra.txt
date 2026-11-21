@@ -1,0 +1,286 @@
+# Дополнение: частотные слова, найденные по пробелам в покрытии корпуса
+lo|pron|его, её, это (после инфинитива: fazê-lo — сделать это)|la los las
+lamentar|verb|сожалеть (lamento — мне жаль)|
+significar|verb!|значить, означать|significa significam significou signifique significado
+manter|verb!|поддерживать, сохранять|mantenho manténs mantém mantemos mantêm mantinha mantive manteve mantenha mantenham manterá mantido mantendo
+adorar|verb|обожать|adoro adoro-te
+calar|verb|замолчать (cala-te — замолчи)|cala-te cale-se
+tornar|verb|делать (кем-то/каким-то); (tornar-se) становиться|tornou-se
+supor|verb!|предполагать|suponho supões supõe supomos supõem supunha supus supôs suponha suposto suposta
+pertencer|verb!|принадлежать|pertenço pertences pertence pertencemos pertencem pertencia pertenceu pertença pertencido
+depender|verb|зависеть (depende — смотря как)|
+aproximar|verb|приближать (aproximar-se — подходить)|
+despachar|verb|отправлять; (despacha-te) поторопись|
+colocar|verb!|класть, помещать|coloco colocas coloca colocamos colocam coloquei colocou coloque coloquem colocado colocada
+criar|verb|создавать; выращивать|
+verificar|verb!|проверять|verifico verificas verifica verificamos verificam verifiquei verificou verifique verificado
+meter|verb|класть, засовывать (meter-se — вмешиваться)|
+pegar|verb!|брать, хватать|pego pegas pega pegamos pegam peguei pegou pegue peguem pegado
+lidar|verb|справляться, иметь дело (lidar com)|
+controlar|verb|контролировать|
+recuperar|verb|восстанавливать, вернуть|
+demorar|verb|задерживаться, занимать время (demora 5 minutos)|
+gozar|verb|насмехаться (gozar com); наслаждаться|
+impedir|verb!|мешать, препятствовать|impeço impedes impede impedimos impedem impedi impediu impeça impedido
+regressar|verb|возвращаться|
+investigar|verb!|расследовать|investigo investiga investiguei investigou investigue investigado
+fingir|verb!|притворяться|finjo finges finge fingimos fingem fingi fingiu finja fingido
+agir|verb!|действовать|ajo ages age agimos agem agi agiu aja agido
+afastar|verb|отдалять (afasta-te — отойди)|
+aguentar|verb|выдерживать, терпеть|aguenta
+prender|verb|арестовывать; привязывать|
+obter|verb!|получать|obtenho obténs obtém obtemos obtêm obtive obteve obtenha obtido
+telefonar|verb|звонить по телефону|
+enganar|verb|обманывать (enganar-se — ошибаться)|
+admitir|verb|признавать; допускать|
+enfrentar|verb|сталкиваться, противостоять|
+avançar|verb!|продвигаться вперёд|avanço avanças avança avançamos avançam avancei avançou avance avançado
+arriscar|verb!|рисковать|arrisco arriscas arrisca arriscamos arriscam arrisquei arriscou arrisque arriscado
+restar|verb|оставаться (resta — остаётся)|
+detestar|verb|ненавидеть, терпеть не мочь|
+libertar|verb|освобождать|
+garantir|verb|гарантировать|
+incluir|verb!|включать|incluo incluis inclui incluímos incluem incluí incluiu inclua incluído incluindo
+retirar|verb|убирать, снимать (деньги)|
+desejar|verb|желать|
+convencer|verb!|убеждать|convenço convences convence convencemos convencem convenci convenceu convença convencido
+bater|verb|бить, стучать|
+inventar|verb|выдумывать, изобретать|
+assinar|verb|подписывать|
+preencher|verb|заполнять (бланк)|
+marcar consulta|phrase|записаться на приём|
+a licença|noun|разрешение; отпуск (по болезни и т.п.)|licenças
+a prisão|noun|тюрьма; арест|prisões
+o rei|noun|король|reis
+a rainha|noun|королева|
+o sinal|noun|знак, сигнал|sinais
+o crime|noun|преступление|
+ambos|pron|оба|ambas
+o grupo|noun|группа|
+o doutor|noun|доктор (обращение к врачу и к человеку с высшим образованием)|doutores
+o respeito|noun|уважение (a respeito de — по поводу)|
+breve|adj|краткий (em breve — скоро)|breves
+preso|adj|арестованный; застрявший|
+real|adj|реальный; королевский|reais
+graças|interj|благодаря (graças a Deus — слава Богу)|
+a idade|noun|возраст|
+o bocado|noun|кусок; немного (um bocado — немного, Португалия)|
+o bocadinho|noun|кусочек; чуть-чуть (Португалия)|
+o papá|noun|папа (детск.)|
+a mamã|noun|мама (детск.)|
+a vítima|noun|жертва|
+o exército|noun|армия|
+o bar|noun|бар|bares
+a cena|noun|сцена; штука, дело (разг., Португалия)|
+parabéns|interj|поздравляю!|
+a feira|noun|ярмарка, рынок|
+a base|noun|основа, база|
+a piada|noun|шутка|
+o controlo|noun|контроль (Португалия)|controle
+a posição|noun|позиция|posições
+o norte|noun|север|
+o sul|noun|юг|
+o oeste|noun|запад|
+o leste|noun|восток|
+o tribunal|noun|суд|tribunais
+o contacto|noun|контакт|contato
+a saída|noun|выход|
+a entrada|noun|вход; закуска|
+a companhia|noun|компания, общество|
+o ouro|noun|золото|
+a maioria|noun|большинство|
+o destino|noun|судьба; пункт назначения|
+a liberdade|noun|свобода|
+humano|adj|человеческий; (o ser humano) человек|
+a espécie|noun|вид, род|
+o cérebro|noun|мозг|
+o contrário|noun|противоположность (pelo contrário — наоборот)|
+a honra|noun|честь|
+a esperança|noun|надежда|
+o acaso|noun|случайность (por acaso — случайно)|
+a bola|noun|мяч|
+suposto|adj|предполагаемый (é suposto — предполагается, должно)|
+o nível|noun|уровень|níveis
+o clube|noun|клуб|
+a realidade|noun|реальность|
+o propósito|noun|цель (de propósito — нарочно; a propósito — кстати)|
+a ligação|noun|связь; звонок|ligações
+o desejo|noun|желание|
+a loucura|noun|безумие|
+o monte|noun|холм; куча (um monte de — куча)|
+oficial|adj|официальный; офицер|oficiais
+o socorro|noun|помощь (socorro! — на помощь!)|
+os dados|noun|данные|
+responsável|adj|ответственный|responsáveis
+a defesa|noun|защита|
+imenso|adj|огромный; (imenso) очень много (Португалия)|
+o acesso|noun|доступ|
+a série|noun|сериал; серия|
+o rádio|noun|радио|
+o herói|noun|герой|
+a carrinha|noun|микроавтобус, фургон (Португалия)|
+a pista|noun|след, подсказка; трасса|
+a justiça|noun|справедливость, правосудие|
+a confiança|noun|доверие|
+comum|adj|общий, обычный|comuns
+o vídeo|noun|видео|
+a pressão|noun|давление|
+o apoio|noun|поддержка|
+prestes|adj|готовый (prestes a — вот-вот)|
+o gelo|noun|лёд|
+maluco|adj|сумасшедший (разг.)|
+a magia|noun|магия|
+o processo|noun|процесс; дело (судебное)|
+quão|adv|насколько
+a arte|noun|искусство|
+o buraco|noun|дыра, яма|
+a coragem|noun|смелость|
+a ação|noun|действие; акция|acção acções ações
+o juiz|noun|судья|juízes
+o parceiro|noun|партнёр|
+a natureza|noun|природа|
+o líder|noun|лидер|líderes
+exceto|prep|кроме|excepto
+máximo|adj|максимальный|
+inocente|adj|невиновный|inocentes
+o gabinete|noun|кабинет|
+o espetáculo|noun|спектакль, шоу|espectáculo
+a carreira|noun|карьера|
+o milhar|noun|тысяча (milhares — тысячи)|
+a distância|noun|расстояние|
+brilhante|adj|блестящий|brilhantes
+a faculdade|noun|факультет, университет|
+a malta|noun|ребята, народ (разг., Португалия)|
+a visão|noun|зрение; видение|visões
+a testemunha|noun|свидетель|
+a canção|noun|песня|canções
+o relógio|noun|часы|
+o interior|noun|внутренняя часть|interiores
+o estilo|noun|стиль|
+a velocidade|noun|скорость|
+a ameaça|noun|угроза|
+o movimento|noun|движение|
+a unidade|noun|единица; подразделение|
+a confusão|noun|путаница, беспорядок|confusões
+culpado|adj|виноватый|
+a banda|noun|группа (музыкальная)|
+o receio|noun|опасение|
+ridículo|adj|нелепый|
+a época|noun|эпоха; сезон|
+a fonte|noun|источник; фонтан|
+a beleza|noun|красота|
+o dono|noun|владелец, хозяин|
+agradável|adj|приятный|agradáveis
+a princesa|noun|принцесса|
+óbvio|adj|очевидный|
+profissional|adj|профессиональный|profissionais
+o anel|noun|кольцо|anéis
+o orgulho|noun|гордость|
+a classe|noun|класс|
+a política|noun|политика|
+a teoria|noun|теория|
+a imprensa|noun|пресса|
+santo|adj|святой|
+a perda|noun|потеря|
+o material|noun|материал|materiais
+o camião|noun|грузовик (Португалия)|camiões
+a rede|noun|сеть|
+a solução|noun|решение (задачи)|soluções
+pessoalmente|adv|лично
+a sensação|noun|ощущение|sensações
+a tecnologia|noun|технология|
+o peito|noun|грудь|
+a boleia|noun|попутка (dar boleia — подвезти, Португалия)|
+o mano|noun|братишка (разг.)|
+legal|adj|законный|legais
+a vingança|noun|месть|
+o peso|noun|вес|
+natural|adj|естественный|naturais
+a responsabilidade|noun|ответственность|
+o universo|noun|вселенная|
+o efeito|noun|эффект|
+o corredor|noun|коридор|
+o conhecimento|noun|знание|
+a cirurgia|noun|операция (хирургическая)|
+o instante|noun|миг|
+original|adj|оригинальный|originais
+familiar|adj|семейный; родственник|familiares
+a pressa|noun|спешка (estar com pressa — спешить)|
+ferido|adj|раненый|
+o treinador|noun|тренер|treinadores
+o crédito|noun|кредит|
+a costa|noun|побережье|
+o cancro|noun|рак (болезнь, Португалия)|
+a opção|noun|вариант, опция|opções
+grave|adj|серьёзный, тяжёлый|graves
+o membro|noun|член (группы)|
+o lago|noun|озеро|
+a presença|noun|присутствие|
+a vitória|noun|победа|
+a pesquisa|noun|поиск, исследование|
+a centena|noun|сотня|
+a explosão|noun|взрыв|explosões
+útil|adj|полезный|úteis
+a tempestade|noun|буря|
+completo|adj|полный, законченный|
+o tratamento|noun|лечение; обращение|
+a esquadra|noun|полицейский участок (Португалия)|
+o funeral|noun|похороны|funerais
+a rosa|noun|роза|
+o companheiro|noun|товарищ, спутник|
+quieto|adj|тихий, неподвижный|
+o discurso|noun|речь|
+o liceu|noun|лицей, старшая школа|
+a tentativa|noun|попытка|
+o piloto|noun|пилот|
+poderoso|adj|могущественный|
+o equipamento|noun|оборудование|
+o génio|noun|гений; характер|
+definitivamente|adv|определённо
+a violência|noun|насилие|
+social|adj|социальный|sociais
+a condição|noun|условие|condições
+o mel|noun|мёд|
+o ferro|noun|железо; утюг|
+o registo|noun|запись, регистрация (Португалия)|
+o modelo|noun|модель|
+o prémio|noun|приз, премия|
+o anjo|noun|ангел|
+bêbado|adj|пьяный|
+apaixonado|adj|влюблённый|
+o ministro|noun|министр|
+o ladrão|noun|вор|ladrões
+a ciência|noun|наука|
+disposto|adj|готовый, расположенный (estar disposto a)|
+a comunidade|noun|сообщество|
+o pânico|noun|паника|
+o detalhe|noun|деталь|
+orgulhoso|adj|гордый|
+a consciência|noun|совесть; сознание|
+o comportamento|noun|поведение|
+os sarilhos|noun|неприятности (Португалия)|
+a autorização|noun|разрешение|autorizações
+o castelo|noun|замок|
+a impressão|noun|впечатление; печать|impressões
+assustador|adj|страшный|assustadora
+mundial|adj|мировой|mundiais
+a intenção|noun|намерение|intenções
+o golpe|noun|удар|
+recentemente|adv|недавно
+o truque|noun|трюк|
+francês|adj|французский|francesa franceses
+a necessidade|noun|необходимость|
+particular|adj|частный, особенный|particulares
+o abrigo|noun|укрытие|
+a torre|noun|башня|
+o artigo|noun|статья; товар|
+o formulário|noun|бланк, анкета|
+o atestado|noun|справка|
+o recado|noun|сообщение, поручение|
+a vacina|noun|вакцина|
+a alergia|noun|аллергия|
+a avaria|noun|поломка (Португалия)|
+a lavandaria|noun|прачечная (Португалия)|
+o cabeleireiro|noun|парикмахер; парикмахерская|
+a mercearia|noun|продуктовая лавка|
+o quiosque|noun|киоск|
