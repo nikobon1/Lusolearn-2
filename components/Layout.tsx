@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile, ViewState } from '../types';
 import {
     HomeIcon, PlusIcon, BookIcon, TrophyIcon,
-    FireIcon, SunIcon, MoonIcon, XIcon, BrainIcon, SettingsIcon
+    FireIcon, SunIcon, MoonIcon, XIcon, BrainIcon, SettingsIcon, TargetIcon
 } from './Icons';
 
 interface LayoutProps {
@@ -55,6 +55,9 @@ const Layout: React.FC<LayoutProps> = ({
                 <nav className="mt-4 flex-1 space-y-2 px-4">
                     <button onClick={() => setView(ViewState.Dashboard)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all ${view === ViewState.Dashboard ? 'bg-emerald-50 font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
                         <HomeIcon className="h-5 w-5" /> Главная
+                    </button>
+                    <button onClick={() => setView(ViewState.Frequency)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all ${view === ViewState.Frequency ? 'bg-emerald-50 font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                        <TargetIcon className="h-5 w-5" /> С нуля
                     </button>
                     <button onClick={() => setView(ViewState.Create)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all ${view === ViewState.Create ? 'bg-emerald-50 font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
                         <PlusIcon className="h-5 w-5" /> Создать
@@ -120,9 +123,9 @@ const Layout: React.FC<LayoutProps> = ({
                             <span className="text-[10px] font-bold uppercase tracking-wider">Создать</span>
                         </button>
 
-                        <button onClick={() => handleViewChange(ViewState.StoryList)} className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-colors ${view === ViewState.StoryList || view === ViewState.Story ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                            <BookIcon className="h-5 w-5" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Истории</span>
+                        <button onClick={() => handleViewChange(ViewState.Frequency)} className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-colors ${view === ViewState.Frequency ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                            <TargetIcon className="h-5 w-5" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">С нуля</span>
                         </button>
 
                         <button onClick={() => setShowMobileMenu(true)} className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-colors ${showMobileMenu ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
@@ -135,6 +138,10 @@ const Layout: React.FC<LayoutProps> = ({
                 {showMobileMenu && (
                     <div className="fixed inset-0 z-[60] bg-slate-950/35 backdrop-blur-sm md:hidden" onClick={() => setShowMobileMenu(false)}>
                         <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] mx-auto max-w-md rounded-[28px] border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-700 dark:bg-slate-800" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => handleViewChange(ViewState.StoryList)} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
+                                <BookIcon className="h-5 w-5" />
+                                <span className="font-semibold">Истории</span>
+                            </button>
                             <button onClick={handleThemeToggle} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
                                 {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
                                 <span className="font-semibold">{theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</span>

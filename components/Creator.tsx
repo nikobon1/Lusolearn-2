@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { LoaderIcon, CameraIcon, PlusIcon, SparklesIcon, BrainIcon } from './Icons';
-import { extractVocabulary, generateCardDetails, getOrGenerateImage } from '../services/geminiService';
-import { Flashcard, Difficulty, VocabularyItem, Folder } from '../types';
+import { extractVocabulary } from '../services/geminiService';
+import { buildFlashcard } from '../services/cardFactory';
+import { Flashcard, VocabularyItem, Folder } from '../types';
 import { notifyError } from '../lib/notifications';
-
-// Use standard UUIDs for database compatibility
-const generateId = () => self.crypto.randomUUID();
 
 const TRIVIA_FACTS = [
     { title: "Лиссабон старше Рима", text: "Столица Португалии на 4 века старше Рима. Это одна из старейших столиц Европы." },
@@ -210,40 +208,7 @@ const Creator: React.FC<Props> = ({ onCardsCreated, onCancel, folders, onCreateF
                 const actions = ["Рисуем иллюстрацию...", "Сочиняем примеры...", "Подбираем грамматику...", "Записываем озвучку..."];
                 setLoadingStatus(`${actions[i % actions.length]} (${i + 1}/${indices.length})`);
 
-                const details = await generateCardDetails(item.word);
-
-                // Image Logic using Gemini (with Global Cache)
-                let finalImageUrl = undefined;
-                if (details.visualPrompt) {
-                    const styleSuffix = ", photorealistic educational flashcard image, single clear main subject, real-world scene, natural colors, natural lighting, realistic textures, clean background, no text, no letters, no logos, no abstract art, no symbolism, no surreal elements, no flat vector style";
-                    const fullPrompt = details.visualPrompt + styleSuffix;
-                    try {
-                        // Use smart function that checks cache
-                        finalImageUrl = await getOrGenerateImage(fullPrompt, item.word);
-                    } catch (imgErr) {
-                        console.warn("Image generation failed:", imgErr);
-                    }
-                }
-
-                const card: Flashcard = {
-                    id: generateId(),
-                    folderIds: [finalFolderId],
-                    tags: tags,
-                    originalTerm: item.word,
-                    translation: item.translation,
-                    definition: details.definition || 'Definition unavailable',
-                    examples: details.examples || [],
-                    grammarNotes: details.grammarNotes,
-                    conjugation: details.conjugation,
-                    imageUrl: finalImageUrl,
-                    imagePrompt: details.visualPrompt,
-                    frequency: details.frequency,
-                    difficulty: Difficulty.New,
-                    nextReviewDate: Date.now(),
-                    interval: 0,
-                    easeFactor: 2.5,
-                    createdAt: Date.now()
-                };
+                const card = await buildFlashcard(item.word, item.translation, { folderIds: [finalFolderId], tags });
                 newCards.push(card);
             }
 

@@ -1,0 +1,643 @@
+# Существительные (с артиклем). Множественное число генерируется; нерегулярные — явно.
+# Люди и семья
+o homem|noun|мужчина, человек|homens
+a mulher|noun|женщина; жена|mulheres
+a pessoa|noun|человек|
+as pessoas|noun|люди|
+a gente|noun|люди; (a gente) мы (разг.)|
+o pai|noun|отец|
+a mãe|noun|мать|
+os pais|noun|родители|
+o filho|noun|сын|
+a filha|noun|дочь|
+os filhos|noun|дети (сыновья и дочери)|
+o irmão|noun|брат|irmãos
+a irmã|noun|сестра|irmãs
+o avô|noun|дедушка|avós
+a avó|noun|бабушка|
+o tio|noun|дядя|
+a tia|noun|тётя|
+o primo|noun|двоюродный брат|
+a prima|noun|двоюродная сестра|
+o sobrinho|noun|племянник|
+a sobrinha|noun|племянница|
+o neto|noun|внук|
+a neta|noun|внучка|
+o marido|noun|муж|
+a esposa|noun|супруга|
+o namorado|noun|парень (бойфренд)|
+a namorada|noun|девушка (подруга)|
+o noivo|noun|жених|
+a noiva|noun|невеста|
+a família|noun|семья|
+o bebé|noun|младенец (Португалия)|bebés bebê
+a criança|noun|ребёнок|
+o miúdo|noun|мальчик, ребёнок (Португалия, разг.)|
+a miúda|noun|девочка (Португалия, разг.)|
+o rapaz|noun|парень, юноша|rapazes
+a rapariga|noun|девушка (Португалия)|
+o menino|noun|мальчик|
+a menina|noun|девочка; девушка|
+o senhor|noun|господин; вы (вежл. к мужчине)|senhores sr.
+a senhora|noun|госпожа; вы (вежл. к женщине)|sra.
+o amigo|noun|друг|
+a amiga|noun|подруга|
+o vizinho|noun|сосед|
+a vizinha|noun|соседка|
+o colega|noun|коллега|
+o chefe|noun|начальник|
+o patrão|noun|хозяин, начальник|patrões
+o cliente|noun|клиент|
+o jovem|noun|молодой человек; молодой|jovens
+o velho|noun|старик; старый|
+o adulto|noun|взрослый|
+o casal|noun|пара (супружеская)|casais
+o hóspede|noun|гость (в отеле)|
+o convidado|noun|приглашённый гость|
+# Профессии
+o médico|noun|врач|
+a médica|noun|врач (женщина)|
+o enfermeiro|noun|медбрат|
+a enfermeira|noun|медсестра|
+o professor|noun|учитель, преподаватель|
+a professora|noun|учительница|
+o aluno|noun|ученик|
+o estudante|noun|студент|
+o advogado|noun|адвокат|
+o polícia|noun|полицейский; полиция (a polícia)|polícias
+o empregado|noun|служащий; официант (Португалия)|
+a empregada|noun|служащая; официантка; домработница|
+o motorista|noun|водитель|
+o condutor|noun|водитель (Португалия)|
+o cozinheiro|noun|повар|
+o engenheiro|noun|инженер|
+o vendedor|noun|продавец|
+o funcionário|noun|сотрудник, служащий|
+o dentista|noun|стоматолог|
+o farmacêutico|noun|фармацевт|
+o carteiro|noun|почтальон|
+o canalizador|noun|сантехник (Португалия)|
+o eletricista|noun|электрик|
+o jornalista|noun|журналист|
+o artista|noun|художник, артист|
+o empregado de mesa|noun|официант|
+o taxista|noun|таксист|
+o padeiro|noun|пекарь|
+# Тело и здоровье
+o corpo|noun|тело|
+a cabeça|noun|голова|
+o cabelo|noun|волосы|
+a cara|noun|лицо|
+o rosto|noun|лицо|
+o olho|noun|глаз|
+a boca|noun|рот|
+o nariz|noun|нос|narizes
+a orelha|noun|ухо|
+o ouvido|noun|ухо (внутреннее), слух|
+o dente|noun|зуб|
+a língua|noun|язык|
+o pescoço|noun|шея|
+o ombro|noun|плечо|
+o braço|noun|рука (от плеча до кисти)|
+a mão|noun|рука (кисть)|mãos
+o dedo|noun|палец|
+a perna|noun|нога|
+o pé|noun|ступня, нога|pés
+o joelho|noun|колено|
+as costas|noun|спина|
+a barriga|noun|живот|
+o estômago|noun|желудок|
+o coração|noun|сердце|corações
+o sangue|noun|кровь|
+a pele|noun|кожа|
+o osso|noun|кость|
+a saúde|noun|здоровье|
+a doença|noun|болезнь|
+a dor|noun|боль|dores
+a febre|noun|температура, жар|
+a gripe|noun|грипп|
+a constipação|noun|простуда (Португалия)|
+a tosse|noun|кашель|
+o hospital|noun|больница|hospitais
+o centro de saúde|noun|поликлиника (Португалия)|
+a farmácia|noun|аптека|
+o medicamento|noun|лекарство|
+o remédio|noun|лекарство, средство|
+o comprimido|noun|таблетка|
+a receita|noun|рецепт|
+a consulta|noun|приём (у врача), консультация|
+as urgências|noun|отделение неотложной помощи|
+a ambulância|noun|скорая помощь|
+o seguro|noun|страховка|
+o acidente|noun|несчастный случай, авария|
+a ferida|noun|рана|
+# Дом
+a casa|noun|дом|
+o apartamento|noun|квартира|
+o andar|noun|этаж; квартира (Португалия)|andares
+o prédio|noun|здание, многоквартирный дом|
+o edifício|noun|здание|
+o quarto|noun|комната, спальня; четверть|
+a sala|noun|гостиная, зал|
+a cozinha|noun|кухня|
+a casa de banho|noun|ванная, туалет (Португалия)|
+o banho|noun|ванна, купание|
+o duche|noun|душ (Португалия)|
+a porta|noun|дверь|
+a janela|noun|окно|
+a parede|noun|стена|
+o chão|noun|пол; земля|chãos
+o teto|noun|потолок|tecto
+o telhado|noun|крыша|
+a escada|noun|лестница|escadas
+o elevador|noun|лифт|
+a varanda|noun|балкон|
+o jardim|noun|сад|jardins
+a garagem|noun|гараж|garagens
+a chave|noun|ключ|
+a cama|noun|кровать|
+a mesa|noun|стол|
+a cadeira|noun|стул|
+o sofá|noun|диван|
+o armário|noun|шкаф|
+a gaveta|noun|ящик (выдвижной)|
+o espelho|noun|зеркало|
+a luz|noun|свет|luzes
+a lâmpada|noun|лампочка|
+o frigorífico|noun|холодильник (Португалия)|
+o fogão|noun|плита|fogões
+o forno|noun|духовка|
+a máquina de lavar|noun|стиральная машина|
+a máquina|noun|машина, аппарат|
+a televisão|noun|телевизор, телевидение|televisões
+o computador|noun|компьютер|
+o telemóvel|noun|мобильный телефон (Португалия)|telemóveis
+o telefone|noun|телефон|
+o carregador|noun|зарядка|
+a tomada|noun|розетка|
+o lixo|noun|мусор|
+a renda|noun|арендная плата (Португалия)|
+o senhorio|noun|арендодатель|
+a mudança|noun|переезд; изменение|
+a almofada|noun|подушка|
+o lençol|noun|простыня|lençóis
+o cobertor|noun|одеяло|
+a toalha|noun|полотенце; скатерть|
+o sabonete|noun|мыло|
+a escova de dentes|noun|зубная щётка|
+o papel higiénico|noun|туалетная бумага|
+o aquecimento|noun|отопление|
+o ar condicionado|noun|кондиционер|
+a água|noun|вода|
+o gás|noun|газ|gases
+a eletricidade|noun|электричество|electricidade
+a internet|noun|интернет|
+# Еда и напитки
+a comida|noun|еда|
+o pequeno-almoço|noun|завтрак (Португалия)|
+o almoço|noun|обед|
+o lanche|noun|перекус, полдник|
+a refeição|noun|приём пищи|refeições
+o pão|noun|хлеб|pães
+o queijo|noun|сыр|
+o fiambre|noun|ветчина (Португалия)|
+a manteiga|noun|сливочное масло|
+o leite|noun|молоко|
+o ovo|noun|яйцо|
+a carne|noun|мясо|
+o frango|noun|курица (мясо)|
+a galinha|noun|курица|
+o porco|noun|свинья; свинина|
+a vaca|noun|корова; говядина|
+o peixe|noun|рыба|
+o bacalhau|noun|треска|
+a sardinha|noun|сардина|
+o marisco|noun|морепродукты|
+o arroz|noun|рис|
+a massa|noun|макароны, тесто|
+a batata|noun|картофель|
+as batatas fritas|noun|картофель фри, чипсы|
+a sopa|noun|суп|
+a salada|noun|салат|
+o legume|noun|овощ|
+a fruta|noun|фрукт(ы)|
+a maçã|noun|яблоко|maçãs
+a laranja|noun|апельсин|
+a banana|noun|банан|
+o tomate|noun|помидор|
+a cebola|noun|лук|
+o alho|noun|чеснок|
+a cenoura|noun|морковь|
+o sal|noun|соль|
+o açúcar|noun|сахар|
+o azeite|noun|оливковое масло|
+o óleo|noun|растительное масло|
+o molho|noun|соус|
+o bolo|noun|торт, пирог|
+o doce|noun|сладость; сладкий|
+o gelado|noun|мороженое (Португалия)|
+o chocolate|noun|шоколад|
+o café|noun|кофе; кафе|
+a bica|noun|эспрессо (Лиссабон)|
+o galão|noun|кофе с молоком в стакане|galões
+o chá|noun|чай|
+o sumo|noun|сок (Португалия)|
+o vinho|noun|вино|
+a cerveja|noun|пиво|
+a imperial|noun|бокал разливного пива (Лиссабон)|
+a bebida|noun|напиток|
+o copo|noun|стакан|
+a garrafa|noun|бутылка|
+a chávena|noun|чашка (Португалия)|
+o prato|noun|тарелка; блюдо|
+a colher|noun|ложка|colheres
+o garfo|noun|вилка|
+a faca|noun|нож|
+o guardanapo|noun|салфетка|
+a conta|noun|счёт|
+a ementa|noun|меню (Португалия)|
+o menu|noun|меню|
+o restaurante|noun|ресторан|
+a pastelaria|noun|кондитерская, кафе (Португалия)|
+o pastel de nata|noun|паштел-де-ната (пирожное)|pastéis
+a gorjeta|noun|чаевые|
+a fome|noun|голод|
+a sede|noun|жажда|
+# Магазины и деньги
+o dinheiro|noun|деньги|
+o euro|noun|евро|
+o cêntimo|noun|цент|
+o preço|noun|цена|
+a loja|noun|магазин|
+o supermercado|noun|супермаркет|
+o mercado|noun|рынок|
+a padaria|noun|булочная|
+o talão|noun|чек (Португалия)|talões
+o recibo|noun|квитанция, чек|
+o troco|noun|сдача|
+a caixa|noun|касса; коробка|
+o cartão|noun|карта (банковская), карточка|cartões
+o multibanco|noun|банкомат; банковская карта (Португалия)|
+o banco|noun|банк; скамейка|
+a compra|noun|покупка|compras
+o saco|noun|пакет, мешок|
+a promoção|noun|скидка, акция|promoções
+o desconto|noun|скидка|
+o tamanho|noun|размер|
+a oferta|noun|предложение; подарок|
+o presente|noun|подарок; настоящее (время)|
+a fatura|noun|счёт, чек с налоговым номером|factura
+o NIF|noun|ИНН (налоговый номер, Португалия)|nif
+o pagamento|noun|оплата|
+# Одежда
+a roupa|noun|одежда|
+a camisa|noun|рубашка|
+a camisola|noun|свитер; футболка (Португалия)|
+a t-shirt|noun|футболка|
+as calças|noun|брюки|
+a saia|noun|юбка|
+o vestido|noun|платье|
+o casaco|noun|куртка, пиджак|
+o sapato|noun|туфля, ботинок|
+a sapatilha|noun|кроссовок (Португалия)|
+a bota|noun|сапог|
+a meia|noun|носок|
+o chapéu|noun|шляпа|
+o chapéu de chuva|noun|зонт|guarda-chuva
+os óculos|noun|очки|
+a mala|noun|сумка; чемодан|
+a bolsa|noun|сумка; кошелёк|
+a carteira|noun|кошелёк, бумажник|
+o bolso|noun|карман|
+# Город и транспорт
+a cidade|noun|город|
+a aldeia|noun|деревня|
+a rua|noun|улица|
+a avenida|noun|проспект|
+a praça|noun|площадь|
+a esquina|noun|угол (улицы)|
+o bairro|noun|район|
+o centro|noun|центр|
+o caminho|noun|путь, дорога|
+a estrada|noun|дорога, шоссе|
+a ponte|noun|мост|
+o semáforo|noun|светофор|
+a passadeira|noun|пешеходный переход (Португалия)|
+o passeio|noun|тротуар (Португалия); прогулка|
+o parque|noun|парк|
+a praia|noun|пляж|
+o carro|noun|машина|
+o autocarro|noun|автобус (Португалия)|
+o comboio|noun|поезд (Португалия)|
+o metro|noun|метро; метр|
+o elétrico|noun|трамвай (Португалия)|eléctrico
+o táxi|noun|такси|
+a bicicleta|noun|велосипед|
+a mota|noun|мотоцикл (Португалия)|
+o avião|noun|самолёт|aviões
+o barco|noun|лодка, судно|
+o navio|noun|корабль|
+a estação|noun|станция, вокзал; время года|estações
+a paragem|noun|остановка (Португалия)|paragens
+o aeroporto|noun|аэропорт|
+o bilhete|noun|билет|
+o passe|noun|проездной|
+a viagem|noun|поездка, путешествие|viagens
+o voo|noun|рейс, полёт|
+a bagagem|noun|багаж|
+o passaporte|noun|паспорт|
+o hotel|noun|гостиница|hotéis
+a reserva|noun|бронь|
+o mapa|noun|карта|
+a direção|noun|направление; руководство|direcção
+a esquerda|noun|лево (à esquerda — налево)|
+a direita|noun|право (à direita — направо)|
+o trânsito|noun|движение, пробки|
+o estacionamento|noun|парковка|
+a gasolina|noun|бензин|
+a escola|noun|школа|
+a universidade|noun|университет|
+a igreja|noun|церковь|
+o museu|noun|музей|
+o cinema|noun|кинотеатр|
+o teatro|noun|театр|
+a biblioteca|noun|библиотека|
+o correio|noun|почта|
+os correios|noun|почта (отделение, Португалия)|
+o escritório|noun|офис|
+a fábrica|noun|фабрика|
+o país|noun|страна|países
+o mundo|noun|мир|
+a terra|noun|земля|
+o mar|noun|море|mares
+o rio|noun|река|
+a montanha|noun|гора|
+a ilha|noun|остров|
+o campo|noun|поле; сельская местность|
+a floresta|noun|лес|
+a árvore|noun|дерево|
+a flor|noun|цветок|flores
+a planta|noun|растение|
+o lugar|noun|место|lugares
+o sítio|noun|место (Португалия)|
+o lado|noun|сторона|
+a zona|noun|зона, район|
+a área|noun|площадь, область|
+o local|noun|место; местный|locais
+a morada|noun|адрес (Португалия)|
+o endereço|noun|адрес|
+o número|noun|номер, число|
+o código postal|noun|почтовый индекс|
+a Câmara|noun|мэрия (Câmara Municipal)|
+as Finanças|noun|налоговая (Португалия)|
+a Segurança Social|noun|соцстрах (Португалия)|
+a junta de freguesia|noun|районная администрация|
+# Время
+o tempo|noun|время; погода|
+a hora|noun|час|
+o minuto|noun|минута|
+o segundo|noun|секунда; второй|
+o dia|noun|день|
+a noite|noun|ночь, вечер|
+a manhã|noun|утро|manhãs
+a semana|noun|неделя|
+o fim de semana|noun|выходные|fim-de-semana
+o mês|noun|месяц|meses
+o ano|noun|год|
+a vez|noun|раз|vezes
+o momento|noun|момент|
+a altura|noun|рост, высота; момент, период (Португалия)|
+a data|noun|дата|
+o aniversário|noun|день рождения; годовщина|
+o feriado|noun|праздничный день|
+as férias|noun|отпуск, каникулы|
+o Natal|noun|Рождество|natal
+a Páscoa|noun|Пасха|
+a segunda-feira|noun|понедельник|segunda
+a terça-feira|noun|вторник|terça
+a quarta-feira|noun|среда|quarta
+a quinta-feira|noun|четверг|quinta
+a sexta-feira|noun|пятница|sexta
+o sábado|noun|суббота|
+o domingo|noun|воскресенье|
+janeiro|noun|январь|
+fevereiro|noun|февраль|
+março|noun|март|
+abril|noun|апрель|
+maio|noun|май|
+junho|noun|июнь|
+julho|noun|июль|
+agosto|noun|август|
+setembro|noun|сентябрь|
+outubro|noun|октябрь|
+novembro|noun|ноябрь|
+dezembro|noun|декабрь|
+a primavera|noun|весна|
+o verão|noun|лето|verões
+o outono|noun|осень|
+o inverno|noun|зима|
+o passado|noun|прошлое|
+o futuro|noun|будущее|
+o início|noun|начало|
+o fim|noun|конец|fins
+o final|noun|конец, финал|finais
+o princípio|noun|начало; принцип|
+a meia-noite|noun|полночь|
+o meio-dia|noun|полдень|
+# Погода и природа
+o sol|noun|солнце|
+a chuva|noun|дождь|
+o vento|noun|ветер|
+a neve|noun|снег|
+o frio|noun|холод; холодный|
+o calor|noun|жара, тепло|
+a nuvem|noun|облако|nuvens
+o céu|noun|небо|
+a lua|noun|луна|
+a estrela|noun|звезда|
+o fogo|noun|огонь|
+o ar|noun|воздух|
+a pedra|noun|камень|
+a areia|noun|песок|
+o animal|noun|животное|animais
+o cão|noun|собака|cães
+o gato|noun|кот|
+o pássaro|noun|птица|
+o cavalo|noun|лошадь|
+# Работа и учёба
+o trabalho|noun|работа|
+o emprego|noun|работа, место работы|
+a empresa|noun|компания|
+o negócio|noun|дело, бизнес|
+a reunião|noun|совещание, встреча|reuniões
+o contrato|noun|контракт, договор|
+o salário|noun|зарплата|
+o ordenado|noun|зарплата (Португалия)|
+a entrevista|noun|интервью, собеседование|
+o projeto|noun|проект|projecto
+a tarefa|noun|задача|
+o horário|noun|расписание, график|
+a aula|noun|урок, занятие|
+o curso|noun|курс|
+o exame|noun|экзамен; обследование|
+o teste|noun|тест|
+o livro|noun|книга|
+o caderno|noun|тетрадь|
+a caneta|noun|ручка|
+o lápis|noun|карандаш|
+o papel|noun|бумага; роль|papéis
+o documento|noun|документ|
+a carta|noun|письмо|
+a mensagem|noun|сообщение|mensagens
+o email|noun|электронное письмо|e-mail
+a palavra|noun|слово|
+a frase|noun|фраза, предложение|
+o português|noun|португальский (язык); португалец|portugueses
+o inglês|noun|английский (язык); англичанин|ingleses
+o russo|noun|русский (язык)|
+a pergunta|noun|вопрос|
+a resposta|noun|ответ|
+a dúvida|noun|сомнение, вопрос|
+o exemplo|noun|пример|
+a ideia|noun|идея|idéia
+a informação|noun|информация|informações
+a notícia|noun|новость|
+o jornal|noun|газета|jornais
+a revista|noun|журнал|
+# Абстрактное и общее
+a coisa|noun|вещь, дело|
+a vida|noun|жизнь|
+a morte|noun|смерть|
+o amor|noun|любовь|
+a verdade|noun|правда|
+a mentira|noun|ложь|
+a razão|noun|причина; разум (ter razão — быть правым)|razões
+o problema|noun|проблема|
+a questão|noun|вопрос (проблема)|questões
+a forma|noun|форма; способ|
+a maneira|noun|способ, манера|
+o modo|noun|способ|
+o jeito|noun|способ, сноровка|
+a parte|noun|часть|
+o resto|noun|остаток|
+a metade|noun|половина|
+o meio|noun|середина; средство|
+o nome|noun|имя|
+o tipo|noun|тип, вид; парень (разг.)|
+a história|noun|история, рассказ|
+o sentido|noun|смысл; направление|
+a causa|noun|причина|
+o caso|noun|случай; дело|
+a sorte|noun|удача|
+o azar|noun|невезение|
+o medo|noun|страх|
+a vontade|noun|желание (à vontade — свободно, как удобно)|
+o prazer|noun|удовольствие (muito prazer — очень приятно)|
+a ajuda|noun|помощь|
+o favor|noun|одолжение|
+a culpa|noun|вина|
+a certeza|noun|уверенность|
+a pena|noun|жалость (é pena — жаль); перо; наказание|
+a vergonha|noun|стыд|
+a saudade|noun|тоска, ностальгия|
+a alegria|noun|радость|
+a felicidade|noun|счастье|
+a paz|noun|мир, покой|
+a guerra|noun|война|
+o jogo|noun|игра; матч|
+a festa|noun|праздник, вечеринка|
+a música|noun|музыка|
+o filme|noun|фильм|
+a fotografia|noun|фотография|foto fotos
+a imagem|noun|изображение|imagens
+a cor|noun|цвет|cores
+o som|noun|звук|sons
+a voz|noun|голос|vozes
+o barulho|noun|шум|
+o silêncio|noun|тишина|
+o cheiro|noun|запах|
+o sabor|noun|вкус|
+a força|noun|сила|
+o poder|noun|власть, сила|
+a lei|noun|закон|leis
+a regra|noun|правило|
+o direito|noun|право; правый; прямо|
+o dever|noun|долг, обязанность|
+a ordem|noun|порядок; приказ|ordens
+a escolha|noun|выбор|
+a decisão|noun|решение|decisões
+a oportunidade|noun|возможность|
+a hipótese|noun|возможность, шанс (Португалия)|
+a possibilidade|noun|возможность|
+o plano|noun|план|
+o objetivo|noun|цель|objectivo
+o sonho|noun|мечта, сон|
+a surpresa|noun|сюрприз|
+o segredo|noun|секрет|
+o erro|noun|ошибка|
+a falta|noun|нехватка, отсутствие|
+a diferença|noun|разница|
+o ponto|noun|точка, пункт|
+a linha|noun|линия|
+o fundo|noun|дно; фон; фонд|
+a situação|noun|ситуация|situações
+o estado|noun|состояние; государство|
+o governo|noun|правительство|
+o presidente|noun|президент|
+o povo|noun|народ|
+a sociedade|noun|общество|
+a cultura|noun|культура|
+a religião|noun|религия|religiões
+Deus|noun|Бог|deus
+o espírito|noun|дух|
+a alma|noun|душа|
+a mente|noun|разум|
+a memória|noun|память|
+o pensamento|noun|мысль|
+o sentimento|noun|чувство|
+a experiência|noun|опыт|
+o conselho|noun|совет|
+a opinião|noun|мнение|opiniões
+o acordo|noun|согласие, договор (de acordo — согласен)|
+a conversa|noun|разговор|
+a relação|noun|отношение, отношения|relações
+a amizade|noun|дружба|
+o casamento|noun|свадьба, брак|
+o divórcio|noun|развод|
+o beijo|noun|поцелуй|
+o abraço|noun|объятие|
+o encontro|noun|встреча, свидание|
+a visita|noun|визит, посещение|
+o convite|noun|приглашение|
+a atenção|noun|внимание|
+o cuidado|noun|осторожность; забота|
+o perigo|noun|опасность|
+a segurança|noun|безопасность|
+o risco|noun|риск|
+a emergência|noun|чрезвычайная ситуация|
+a fila|noun|очередь|
+a senha|noun|талончик (в очереди); пароль|
+o desporto|noun|спорт (Португалия)|
+o futebol|noun|футбол|
+a equipa|noun|команда (Португалия)|
+o ginásio|noun|спортзал|
+a piscina|noun|бассейн|
+o passatempo|noun|хобби|
+o livro de reclamações|noun|книга жалоб|
+o objeto|noun|предмет|objecto
+o assunto|noun|тема, дело|
+o motivo|noun|причина, повод|
+o espaço|noun|пространство; место|
+a energia|noun|энергия|
+o valor|noun|ценность; стоимость|valores
+a qualidade|noun|качество|
+a quantidade|noun|количество|
+o resultado|noun|результат|
+o sucesso|noun|успех|
+o serviço|noun|услуга, служба|
+o sistema|noun|система|
+o programa|noun|программа|
+a lista|noun|список|
+o pacote|noun|посылка, пакет|
+a encomenda|noun|заказ, посылка|
+o talho|noun|мясная лавка (Португалия)|

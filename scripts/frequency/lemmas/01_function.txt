@@ -1,0 +1,248 @@
+# Служебные слова: местоимения, предлоги, союзы, артикли, наречия
+# Формат: лемма|часть речи|перевод|доп. формы (через пробел)
+o|det|определённый артикль м.р. (the)|os
+a|det|определённый артикль ж.р.; к, в (предлог)|as
+um|det|один; какой-то (неопр. артикль м.р.)|uns
+uma|det|одна; какая-то (неопр. артикль ж.р.)|umas
+de|prep|из, от; (родительный падеж: «чей»)
+do|prep|= de + o (из, от; …-а)|dos
+da|prep|= de + a|das
+em|prep|в, на
+no|prep|= em + o (в, на)|nos
+na|prep|= em + a (в, на)|nas
+num|prep|= em + um|numa nuns numas
+dum|prep|= de + um|duma
+ao|prep|= a + o (к, в)|aos
+à|prep|= a + a (к, в)|às
+para|prep|для, чтобы; в (направление)|pra
+por|prep|через, по, за, ради|
+pelo|prep|= por + o|pelos pela pelas
+com|prep|с
+sem|prep|без
+sobre|prep|о, про; на, над
+até|prep|до; даже
+desde|prep|с (какого-то времени), начиная с
+entre|prep|между, среди
+contra|prep|против
+durante|prep|во время, в течение
+após|prep|после
+sob|prep|под
+perante|prep|перед (лицом)
+segundo|prep|согласно; второй; секунда|segundos
+conforme|prep|согласно, в зависимости от
+dele|pron|его (= de + ele)|deles
+dela|pron|её (= de + ela)|delas
+nele|pron|в нём (= em + ele)|neles nela nelas
+deste|pron|этого (= de + este)|destes desta destas
+neste|pron|в этом (= em + este)|nestes nesta nestas
+desse|pron|этого (= de + esse)|desses dessa dessas
+nesse|pron|в этом (= em + esse)|nesses nessa nessas
+daquele|pron|того (= de + aquele)|daqueles daquela daquelas
+naquele|pron|в том (= em + aquele)|naqueles naquela naquelas
+disso|pron|об этом, этого (= de + isso)
+nisso|pron|в этом (= em + isso)
+disto|pron|об этом (= de + isto)
+nisto|pron|в этом (= em + isto)
+daquilo|pron|о том (= de + aquilo)
+daqui|adv|отсюда (= de + aqui)
+daí|adv|оттуда; поэтому (= de + aí)
+dali|adv|оттуда (= de + ali)
+e|conj|и
+ou|conj|или
+mas|conj|но
+porque|conj|потому что
+porquê|adv|почему?
+que|conj|что; который; чем
+se|conj|если; ли; себя (возвратное)
+quando|conj|когда
+como|conj|как
+embora|conj|хотя
+enquanto|conj|пока, в то время как
+pois|conj|ведь, так как; ну да
+portanto|conj|поэтому, следовательно
+então|adv|тогда, итак
+nem|conj|ни, даже не
+caso|conj|в случае если; случай (o caso)|casos
+porém|conj|однако
+contudo|conj|тем не менее
+logo|adv|сразу, скоро; значит
+senão|conj|иначе, а то
+apesar|adv|несмотря (apesar de)
+eu|pron|я
+tu|pron|ты
+ele|pron|он
+ela|pron|она
+nós|pron|мы
+vós|pron|вы (устар., формально)
+eles|pron|они (м.р.)
+elas|pron|они (ж.р.)
+você|pron|вы, ты (вежл.; в Португалии осторожно)|vocês voce
+me|pron|меня, мне
+te|pron|тебя, тебе
+lhe|pron|ему, ей, вам|lhes
+nos|pron|нас, нам
+vos|pron|вас, вам
+mim|pron|меня, мне (после предлога)
+ti|pron|тебя, тебе (после предлога)
+si|pron|себя; вас (вежл., после предлога)
+comigo|pron|со мной
+contigo|pron|с тобой
+consigo|pron|с собой; с вами (вежл.)
+connosco|pron|с нами|conosco
+convosco|pron|с вами
+meu|pron|мой|meus
+minha|pron|моя|minhas
+teu|pron|твой|teus
+tua|pron|твоя|tuas
+seu|pron|его, её, ваш|seus
+sua|pron|его, её, ваша|suas
+nosso|pron|наш|nossos
+nossa|pron|наша; ого! (воскл.)|nossas
+vosso|pron|ваш|vossos vossa vossas
+este|pron|этот (рядом со мной)|estes
+esta|pron|эта (рядом со мной)|estas
+esse|pron|этот (рядом с тобой)|esses
+essa|pron|эта (рядом с тобой)|essas
+aquele|pron|тот (далеко)|aqueles
+aquela|pron|та (далеко)|aquelas
+isto|pron|это (рядом со мной)
+isso|pron|это (рядом с тобой)
+aquilo|pron|то
+quem|pron|кто
+qual|pron|какой, который|quais
+quanto|pron|сколько|quantos quanta quantas
+onde|adv|где
+aonde|adv|куда
+o quê|pron|что? (в конце вопроса)|quê
+tudo|pron|всё
+todo|pron|весь, каждый|todos toda todas
+nada|pron|ничего
+algo|pron|что-то
+alguém|pron|кто-то
+ninguém|pron|никто
+algum|pron|какой-то, некоторый|alguns alguma algumas
+nenhum|pron|никакой, ни один|nenhuns nenhuma nenhumas
+outro|pron|другой|outros outra outras
+mesmo|adv|даже; тот же самый; действительно|mesmos mesma mesmas
+próprio|adj|собственный, сам|próprios própria próprias
+cada|pron|каждый
+qualquer|pron|любой|quaisquer
+tal|pron|такой|tais
+vários|pron|несколько, различные|várias
+certo|adj|верный, точный; определённый|certos certa certas
+tanto|adv|столько, так много|tantos tanta tantas
+muito|adv|очень; много|muitos muita muitas
+pouco|adv|мало, немного|poucos pouca poucas
+mais|adv|больше, ещё
+menos|adv|меньше
+demais|adv|слишком; чересчур
+demasiado|adv|слишком (много)|demasiada demasiados demasiadas
+bastante|adv|достаточно; довольно-таки
+tão|adv|так, настолько
+não|adv|нет; не|näo nao
+sim|adv|да
+já|adv|уже; сейчас же
+ainda|adv|ещё; всё ещё
+agora|adv|сейчас
+hoje|adv|сегодня
+ontem|adv|вчера
+amanhã|adv|завтра
+aqui|adv|здесь
+aí|adv|там (рядом с тобой)
+ali|adv|там (вон там)
+lá|adv|там (далеко)
+cá|adv|здесь, сюда (разг.)
+bem|adv|хорошо
+mal|adv|плохо
+sempre|adv|всегда
+nunca|adv|никогда
+jamais|adv|никогда (усил.)
+também|adv|тоже, также
+só|adv|только; один, одинокий
+apenas|adv|только, лишь
+assim|adv|так, таким образом
+depois|adv|потом, после
+antes|adv|раньше, перед
+cedo|adv|рано
+tarde|adv|поздно; день, вторая половина дня (a tarde)|tardes
+talvez|adv|может быть
+quase|adv|почти
+longe|adv|далеко
+perto|adv|близко
+dentro|adv|внутри
+fora|adv|снаружи, вне
+atrás|adv|сзади; назад (тому)
+trás|adv|зад (para trás — назад)
+frente|adv|перед (em frente — впереди, напротив)
+cima|adv|верх (em cima — наверху)
+baixo|adv|низ; низкий (em baixo — внизу)|baixos baixa baixas
+debaixo|adv|под (debaixo de)
+acima|adv|выше, над
+abaixo|adv|ниже, под
+junto|adv|вместе, рядом|juntos junta juntas
+depressa|adv|быстро, скорее
+devagar|adv|медленно
+realmente|adv|действительно
+claro|adv|конечно; светлый, ясный|claros clara claras
+exatamente|adv|точно, именно|exactamente
+provavelmente|adv|вероятно
+finalmente|adv|наконец
+simplesmente|adv|просто
+completamente|adv|полностью
+novamente|adv|снова
+imediatamente|adv|немедленно
+obviamente|adv|очевидно
+especialmente|adv|особенно
+rapidamente|adv|быстро
+totalmente|adv|полностью
+absolutamente|adv|абсолютно
+normalmente|adv|обычно
+infelizmente|adv|к сожалению
+felizmente|adv|к счастью
+certamente|adv|конечно, наверняка
+sequer|adv|даже (nem sequer — даже не)
+afinal|adv|в конце концов, всё-таки
+aliás|adv|кстати; впрочем
+entretanto|adv|тем временем
+ultimamente|adv|в последнее время
+geralmente|adv|обычно, как правило
+principalmente|adv|главным образом
+basicamente|adv|в основном
+juntamente|adv|совместно
+algures|adv|где-то
+além|adv|кроме того; дальше (além de — кроме)
+através|adv|через, сквозь (através de)
+cerca|adv|около, примерно (cerca de)
+acerca|adv|о, насчёт (acerca de)
+quanto a|adv|что касается
+ora|interj|ну; итак; то… то
+olá|interj|привет
+adeus|interj|прощай, до свидания
+tchau|interj|пока
+obrigado|interj|спасибо (говорит мужчина)
+obrigada|interj|спасибо (говорит женщина)
+oh|interj|о!, ох
+ah|interj|а!, ах
+ei|interj|эй
+ok|interj|окей|okay
+pronto|interj|ну всё, ладно; готовый|prontos pronta prontas
+olha|interj|слушай, смотри (разг.)
+bom dia|phrase|доброе утро, добрый день
+boa tarde|phrase|добрый день (после обеда)
+boa noite|phrase|добрый вечер; спокойной ночи
+por favor|phrase|пожалуйста (просьба)|favor
+de nada|phrase|не за что
+com licença|phrase|разрешите, извините (пройти)|licença
+desculpa|interj|извини|desculpe desculpem
+até logo|phrase|до скорого
+até amanhã|phrase|до завтра
+tudo bem|phrase|всё хорошо; как дела?
+se calhar|phrase|наверное, может быть (типично для Португалии)|calhar
+de facto|phrase|на самом деле|facto
+de repente|phrase|вдруг|repente
+pelo menos|phrase|по крайней мере
+por isso|phrase|поэтому
+se faz favor|phrase|пожалуйста (в Португалии: в кафе, магазине)
+fixe|adj|клёвый, классный (разг., Португалия)|fixes
+porreiro|adj|классный, отличный (разг., Португалия)|porreira porreiros
+giro|adj|милый, симпатичный (Португалия)|gira giros giras

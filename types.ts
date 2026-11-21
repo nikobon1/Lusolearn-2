@@ -106,7 +106,8 @@ export enum ViewState {
   Create = 'CREATE',
   Profile = 'PROFILE',
   Story = 'STORY',
-  StoryList = 'STORY_LIST'
+  StoryList = 'STORY_LIST',
+  Frequency = 'FREQUENCY'
 }
 
 // Gemini Response Schema Types

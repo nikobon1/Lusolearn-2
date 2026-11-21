@@ -1,0 +1,206 @@
+# Прилагательные (м.р.; формы ж.р. и мн.ч. генерируются для -o; нерегулярные — явно)
+bom|adj|хороший|boa bons boas
+mau|adj|плохой|má maus más
+grande|adj|большой|grandes
+pequeno|adj|маленький|
+novo|adj|новый; молодой|
+velho|adj|старый|
+melhor|adj|лучше, лучший|melhores
+pior|adj|хуже, худший|piores
+maior|adj|больше, крупнейший|maiores
+menor|adj|меньше; младший|menores
+primeiro|adj|первый|
+último|adj|последний|
+próximo|adj|следующий; близкий|
+seguinte|adj|следующий|seguintes
+anterior|adj|предыдущий|anteriores
+único|adj|единственный, уникальный|
+igual|adj|одинаковый, такой же|iguais
+diferente|adj|разный, другой|diferentes
+mesmo tipo|adj|—|
+importante|adj|важный|importantes
+possível|adj|возможный|possíveis
+impossível|adj|невозможный|impossíveis
+fácil|adj|лёгкий (простой)|fáceis
+difícil|adj|трудный|difíceis
+simples|adj|простой|
+complicado|adj|сложный, запутанный|
+feliz|adj|счастливый|felizes
+triste|adj|грустный|tristes
+contente|adj|довольный|contentes
+cansado|adj|уставший|
+doente|adj|больной|doentes
+ocupado|adj|занятый|
+livre|adj|свободный|livres
+sozinho|adj|один, в одиночестве|
+preocupado|adj|обеспокоенный|
+nervoso|adj|нервный|
+calmo|adj|спокойный|
+zangado|adj|сердитый (Португалия)|
+chateado|adj|раздражённый, расстроенный (Португалия)|
+farto|adj|сытый; сытый по горло (estou farto — надоело)|
+bonito|adj|красивый|
+lindo|adj|прекрасный, красивый|
+feio|adj|некрасивый|
+giro bonito|adj|—|
+alto|adj|высокий; громкий|
+gordo|adj|толстый|
+magro|adj|худой|
+forte|adj|сильный|fortes
+fraco|adj|слабый|
+rápido|adj|быстрый|
+lento|adj|медленный|
+quente|adj|горячий, тёплый|quentes
+frio adj|adj|—|
+fresco|adj|свежий; прохладный|
+limpo|adj|чистый|
+sujo|adj|грязный|
+cheio|adj|полный|
+vazio|adj|пустой|
+aberto|adj|открытый|
+fechado|adj|закрытый|
+caro|adj|дорогой|
+barato|adj|дешёвый|
+rico|adj|богатый|
+pobre|adj|бедный|pobres
+novo em folha|adj|—|
+longo|adj|длинный, долгий|
+comprido|adj|длинный (Португалия)|
+curto|adj|короткий|
+largo|adj|широкий; площадь (o largo)|
+estreito|adj|узкий|
+pesado|adj|тяжёлый|
+leve|adj|лёгкий (по весу)|leves
+duro|adj|твёрдый, жёсткий|
+mole|adj|мягкий|moles
+macio|adj|мягкий (на ощупь)|
+doce adj|adj|—|
+salgado|adj|солёный|
+amargo|adj|горький|
+picante|adj|острый (о еде)|picantes
+delicioso|adj|вкусный|
+saboroso|adj|вкусный|
+bem passado|adj|хорошо прожаренный|
+verdadeiro|adj|настоящий, истинный|
+falso|adj|ложный, фальшивый|
+errado|adj|неправильный|
+correto|adj|правильный|correcto
+justo|adj|справедливый|
+estranho|adj|странный|
+normal|adj|нормальный|normais
+especial|adj|особенный|especiais
+perfeito|adj|идеальный|
+ótimo|adj|отличный|óptimo óptima ótima
+excelente|adj|превосходный|excelentes
+maravilhoso|adj|чудесный|
+incrível|adj|невероятный|incríveis
+horrível|adj|ужасный|horríveis
+terrível|adj|ужасный|terríveis
+fantástico|adj|фантастический|
+engraçado|adj|смешной|
+divertido|adj|весёлый, забавный|
+interessante|adj|интересный|interessantes
+chato|adj|скучный, надоедливый|
+simpático|adj|приятный, симпатичный (о человеке)|
+querido|adj|дорогой, милый|
+inteligente|adj|умный|inteligentes
+esperto|adj|сообразительный|
+estúpido|adj|глупый|
+louco|adj|сумасшедший|
+pronto|adj|—|
+preparado|adj|готовый, подготовленный|
+seguro|adj|безопасный; уверенный|
+perigoso|adj|опасный|
+grávida|adj|беременная|
+morto|adj|—|
+vivo|adj|живой|
+jovem|adj|—|
+antigo|adj|старинный, бывший|
+moderno|adj|современный|
+público|adj|общественный|
+privado|adj|частный|
+pessoal|adj|личный; (o pessoal) ребята, народ|pessoais
+local|adj|—|
+nacional|adj|национальный|nacionais
+português|adj|португальский|portuguesa portugueses portuguesas
+brasileiro|adj|бразильский|
+russo|adj|—|
+estrangeiro|adj|иностранный; иностранец|
+inteiro|adj|целый|
+total|adj|полный, общий|totais
+geral|adj|общий|gerais
+principal|adj|главный|principais
+necessário|adj|необходимый|
+suficiente|adj|достаточный|suficientes
+capaz|adj|способный|capazes
+disponível|adj|доступный, свободный|disponíveis
+obrigatório|adj|обязательный|
+gratuito|adj|бесплатный|
+grátis|adj|бесплатно|
+branco|adj|белый|
+preto|adj|чёрный|
+negro|adj|чёрный, тёмный|
+vermelho|adj|красный|
+azul|adj|синий, голубой|azuis
+verde|adj|зелёный|verdes
+amarelo|adj|жёлтый|
+cinzento|adj|серый (Португалия)|
+castanho|adj|коричневый (Португалия)|
+cor-de-rosa|adj|розовый|
+laranja adj|adj|—|
+escuro|adj|тёмный|
+claro adj|adj|—|
+direito adj|adj|—|
+esquerdo|adj|левый|
+alegre|adj|весёлый|alegres
+sério|adj|серьёзный; (a sério?) правда?|
+honesto|adj|честный|
+educado|adj|вежливый, воспитанный|
+gentil|adj|любезный|gentis
+paciente|adj|терпеливый; пациент|pacientes
+famoso|adj|известный|
+conhecido adj|adj|—|
+lindo dia|adj|—|
+atrasado|adj|опоздавший; отсталый|
+adiantado|adj|ранний, спешащий (о часах)|
+pequenino|adj|крошечный|
+enorme|adj|огромный|enormes
+# Числительные
+zero|num|ноль
+um número|num|—
+dois|num|два|duas
+três|num|три
+quatro|num|четыре
+cinco|num|пять
+seis|num|шесть
+sete|num|семь
+oito|num|восемь
+nove|num|девять
+dez|num|десять
+onze|num|одиннадцать
+doze|num|двенадцать
+treze|num|тринадцать
+catorze|num|четырнадцать|quatorze
+quinze|num|пятнадцать
+dezasseis|num|шестнадцать (Португалия)
+dezassete|num|семнадцать (Португалия)
+dezoito|num|восемнадцать
+dezanove|num|девятнадцать (Португалия)
+vinte|num|двадцать
+trinta|num|тридцать
+quarenta|num|сорок
+cinquenta|num|пятьдесят
+sessenta|num|шестьдесят
+setenta|num|семьдесят
+oitenta|num|восемьдесят
+noventa|num|девяносто
+cem|num|сто
+cento|num|сто (в составных: cento e um)
+duzentos|num|двести|duzentas
+trezentos|num|триста|trezentas
+quinhentos|num|пятьсот|quinhentas
+mil|num|тысяча
+milhão|num|миллион|milhões
+terceiro|num|третий|terceira terceiros
+quarto número|num|—
+dúzia|num|дюжина|dúzias
