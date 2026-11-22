@@ -95,6 +95,15 @@ export default function App() {
         setView(ViewState.Study);
     };
 
+    // Keeps a study session going: next due cards not yet shown in this session
+    const getMoreStudyCards = (excludeIds: Set<string>, limit = 20): Flashcard[] => {
+        const now = Date.now();
+        return cards
+            .filter(c => !excludeIds.has(c.id) && c.nextReviewDate <= now)
+            .sort((a, b) => a.nextReviewDate - b.nextReviewDate)
+            .slice(0, limit);
+    };
+
     const dueCount = cards.filter(c => c.nextReviewDate <= Date.now()).length;
 
     if (loading) return (
@@ -139,6 +148,7 @@ export default function App() {
                             onComplete={() => setView(ViewState.Dashboard)}
                             onUpdateCard={(updated) => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
                             onProgress={recordReviewProgress}
+                            getMoreCards={getMoreStudyCards}
                             userId={session?.user.id}
                         />
                     </Suspense>

@@ -12,6 +12,8 @@ interface StudyContainerProps {
     onComplete: () => void;
     onUpdateCard: (card: Flashcard) => void;
     onProgress: (amount: number) => void;
+    /** Next cards due for review that are not in this session yet; used to keep the session going. */
+    getMoreCards?: (excludeIds: Set<string>) => Flashcard[];
     userId?: string;
 }
 
@@ -106,7 +108,7 @@ const getReviewOutcome = (card: Flashcard, rating: ReviewRating) => {
 };
 
 const StudyContainer: React.FC<StudyContainerProps> = ({
-    cards, onComplete, onUpdateCard, onProgress, userId
+    cards, onComplete, onUpdateCard, onProgress, getMoreCards, userId
 }) => {
     const [queue, setQueue] = useState<QueueItem[]>(() => cards.map(card => ({ card, attempt: 0 })));
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -158,6 +160,15 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
 
         if (currentIndex < nextQueue.length - 1) {
             setCurrentIndex(prev => prev + 1);
+            return;
+        }
+
+        // Queue ran out: continue with the next due cards instead of ending the session
+        const seen = new Set(nextQueue.map(item => item.card.id));
+        const more = getMoreCards?.(seen) ?? [];
+        if (more.length > 0) {
+            setQueue([...nextQueue, ...more.map(card => ({ card, attempt: 0 }))]);
+            setCurrentIndex(prev => prev + 1);
         } else {
             setIsFinished(true);
         }
@@ -171,7 +182,7 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
                 </div>
                 <h2 className="mb-2 text-2xl font-bold text-slate-800 dark:text-white">Сессия завершена!</h2>
                 <p className="mb-8 max-w-xs text-slate-500 dark:text-slate-400">
-                    Вы повторили {cards.length} слов(а){relearned > 0 ? `, ещё ${relearned} раз(а) вернулись к трудным` : ''}. Отличная работа!
+                    Вы повторили {new Set(queue.map(item => item.card.id)).size} слов(а){relearned > 0 ? `, ещё ${relearned} раз(а) вернулись к трудным` : ''}. Отличная работа!
                 </p>
                 <button
                     onClick={onComplete}
