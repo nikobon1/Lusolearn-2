@@ -1,6 +1,7 @@
 import { Difficulty, Flashcard } from '../types';
 import { generateCardDetails } from './vocabulary';
 import { getOrGenerateImage } from './images';
+import { isAiAccountError } from './client';
 
 const IMAGE_STYLE_SUFFIX = ", photorealistic educational flashcard image, single clear main subject, real-world scene, natural colors, natural lighting, realistic textures, clean background, no text, no letters, no logos, no abstract art, no symbolism, no surreal elements, no flat vector style";
 
@@ -36,7 +37,7 @@ export const buildFlashcard = async (
     try {
         details = await generateCardDetails(word);
     } catch (error) {
-        if (!allowFallback) throw error;
+        if (!allowFallback || isAiAccountError(error)) throw error;
         console.warn(`Card details generation failed for "${word}", creating minimal card`, error);
         return { ...base, definition: '', examples: [], frequency };
     }

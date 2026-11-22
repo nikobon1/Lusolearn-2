@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { describeAiError } from '../services/client';
 import { Flashcard, SavedStory } from '../types';
 import { VolumeIcon, LoaderIcon, BookIcon, PlusIcon, HomeIcon, BookmarkIcon } from './Icons';
 import { generateStoryFromWords, generateAudio, playAudio } from '../services/geminiService';
@@ -43,7 +44,7 @@ const StoryView: React.FC<Props> = ({ cards, initialStory, onBack, onNext, onSav
                 setStory(result);
             } catch (e) {
                 console.error(e);
-                notifyError('Не удалось создать историю. Попробуйте еще раз.');
+                notifyError(describeAiError(e, 'Не удалось создать историю. Попробуйте ещё раз.'), 8000);
             } finally {
                 setLoading(false);
             }
