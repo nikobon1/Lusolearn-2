@@ -14,6 +14,8 @@ export interface Example {
   level: 'A1' | 'A2' | 'B1' | 'B2';
   sentence: string;
   translation: string;
+  /** Real line from a video lesson (link to the moment in the video) */
+  source?: { lessonId?: string; url?: string; time?: number; title?: string };
   patterns?: Pattern[]; // Grammar patterns found in this sentence
   audioBase64?: string; // Cache for example audio
 }
@@ -107,7 +109,37 @@ export enum ViewState {
   Profile = 'PROFILE',
   Story = 'STORY',
   StoryList = 'STORY_LIST',
-  Frequency = 'FREQUENCY'
+  Frequency = 'FREQUENCY',
+  Lessons = 'LESSONS'
+}
+
+export interface LessonItem {
+  /** Word in dictionary form (nouns with article) or a whole phrase as used */
+  term: string;
+  kind: 'word' | 'phrase';
+  translation: string;
+  /** Index of the transcript line where it occurs */
+  line: number;
+  /** Russian translation of that line */
+  lineTranslation: string;
+  note?: string;
+}
+
+export interface LessonAnalysis {
+  title: string;
+  summary: string;
+  variant: 'pt-PT' | 'pt-BR' | 'mixed' | 'unknown';
+  items: LessonItem[];
+}
+
+export interface VideoLesson {
+  id: string;
+  title: string;
+  url?: string;
+  videoId?: string;
+  transcript: string;
+  analysis: LessonAnalysis;
+  createdAt: number;
 }
 
 // Gemini Response Schema Types
