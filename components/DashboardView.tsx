@@ -1,5 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
+import DailyPlanWidget from './DailyPlanWidget';
+import { PlanSettings, PlanSummary } from '../domain/dailyPlan';
 import { Session } from '@supabase/supabase-js';
 import { Flashcard, UserProfile, Folder, ViewState } from '../types';
 import { suggestSmartSorting, SmartSortSuggestion } from '../services/geminiService';
@@ -29,6 +31,10 @@ interface DashboardProps {
     onShowStudyConfig: () => void;
     onOpenList: (config: { title: string; filter: 'learned' | 'learning' }) => void;
     onStudySingleCard: (id: string) => void;
+    planSummary: PlanSummary;
+    planSettings: PlanSettings;
+    onChangePlanSettings: (patch: Partial<PlanSettings>) => void;
+    onStartPlan: () => void;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
 }
@@ -36,6 +42,7 @@ interface DashboardProps {
 const DashboardView: React.FC<DashboardProps> = ({
     session, user, cards, setCards, folders, setFolders,
     setView, onStartStudy, onShowStudyConfig, onOpenList, onStudySingleCard,
+    planSummary, planSettings, onChangePlanSettings, onStartPlan,
     theme, toggleTheme
 }) => {
     // Local State for Dashboard UI
@@ -332,16 +339,12 @@ const DashboardView: React.FC<DashboardProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Stats & Actions */}
                     <div className="lg:col-span-4 space-y-6">
+                        <DailyPlanWidget summary={planSummary} settings={planSettings} onChangeSettings={onChangePlanSettings} onStart={onStartPlan} />
                         <DailyQuestsWidget quests={user.quests} />
                         <StatsWidget cards={cards} user={user} onOpenList={(type) => onOpenList({ title: type === 'learned' ? 'Выучено' : 'На изучении', filter: type })} />
 
                         {/* Study Actions */}
                         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-3">
-                            <button onClick={() => onStartStudy('srs', new Set())} className="w-full p-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-bold rounded-2xl hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-3 border border-indigo-100 dark:border-indigo-800/30">
-                                <div className="p-2 bg-white dark:bg-indigo-900/50 rounded-full shadow-sm"><BrainIcon className="w-5 h-5" /></div>
-                                <span>Умное повторение</span>
-                                <span className="ml-auto text-xs bg-white dark:bg-indigo-900/50 px-2 py-1 rounded-lg text-indigo-600 dark:text-indigo-300">{dueCount}</span>
-                            </button>
                             <button onClick={onShowStudyConfig} className="w-full p-4 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-all flex items-center gap-3">
                                 <div className="p-2 bg-slate-50 dark:bg-slate-600 rounded-full"><ChartIcon className="w-5 h-5" /></div>
                                 <span>Частотное</span>
