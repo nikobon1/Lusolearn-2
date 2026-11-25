@@ -7,6 +7,7 @@ import {
 } from '../domain/frequencyDictionary';
 import { useFrequencyProgress } from '../hooks/useFrequencyProgress';
 import { buildFlashcard } from '../services/cardFactory';
+import { describeAiError } from '../services/client';
 import { notifyError, notifySuccess } from '../lib/notifications';
 import { CheckCircleIcon, LoaderIcon, PlusIcon, SearchIcon, SparklesIcon, TargetIcon, XIcon } from './Icons';
 
@@ -157,7 +158,7 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
             }
         } catch (error) {
             console.error('Frequency card generation failed', error);
-            notifyError('Не удалось создать часть карточек. Попробуйте ещё раз.');
+            notifyError(describeAiError(error, 'Не удалось создать часть карточек. Попробуйте ещё раз.'), 8000);
         }
 
         if (created.length > 0) {

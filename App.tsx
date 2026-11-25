@@ -7,6 +7,9 @@ import DashboardView from './components/DashboardView';
 import { useAppData } from './hooks/useAppData';
 import { useTheme } from './hooks/useTheme';
 import { useStudyState } from './hooks/useStudyState';
+import { useDailyPlan } from './hooks/useDailyPlan';
+import { planRemaining } from './domain/dailyPlan';
+import { notifyInfo } from './lib/notifications';
 import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
 import { Flashcard, Folder, ViewState } from './types';
@@ -42,8 +45,43 @@ export default function App() {
 
     const {
         studyQueue, setStudyQueue, showStudyConfig, setShowStudyConfig, listModalConfig, setListModalConfig,
-        handleStartStudy, handleStudySingleCard
+        handleStartStudy: startFilteredStudy, handleStudySingleCard: studySingleCardRaw
     } = useStudyState(cards, setView);
+
+    const plan = useDailyPlan(cards, session?.user.id);
+    // Remount the study screen for every new session
+    const [studySessionKey, setStudySessionKey] = useState(0);
+
+    const openStudy = (queue: Flashcard[]) => {
+        setStudyQueue(queue);
+        setStudySessionKey(k => k + 1);
+        setView(ViewState.Study);
+    };
+
+    // "Учить": today's plan (reviews + new words); when it's done, an extra portion of due reviews
+    const startPlanSession = () => {
+        const queue = plan.getQueue();
+        if (queue.length > 0) return openStudy(queue);
+        const extra = plan.getExtraQueue();
+        if (extra.length > 0) {
+            notifyInfo('План на сегодня выполнен. Берём дополнительную порцию повторений.');
+            return openStudy(extra);
+        }
+        notifyInfo(plan.summary.newAvailable === 0
+            ? 'Сейчас нечего повторять. Добавьте новые слова в «С нуля» или «Создать».'
+            : 'На сегодня всё! Новые слова появятся завтра (или увеличьте лимит на главной).');
+    };
+
+    const handleStartStudy = (mode: 'srs' | 'frequency', filters: Set<string>) => {
+        if (mode === 'srs') return startPlanSession();
+        startFilteredStudy(mode, filters);
+        setStudySessionKey(k => k + 1);
+    };
+
+    const handleStudySingleCard = (id: string) => {
+        studySingleCardRaw(id);
+        setStudySessionKey(k => k + 1);
+    };
 
     const {
         storyCards, viewingStory, setViewingStory, showStoryConfig, setShowStoryConfig, storyGenIndex,
@@ -91,11 +129,10 @@ export default function App() {
 
     const handleStudyCards = (toStudy: Flashcard[]) => {
         if (toStudy.length === 0) return;
-        setStudyQueue(toStudy);
-        setView(ViewState.Study);
+        openStudy(toStudy);
     };
 
-    const dueCount = cards.filter(c => c.nextReviewDate <= Date.now()).length;
+    const dueCount = planRemaining(plan.summary);
 
     if (loading) return (
         <>
@@ -120,7 +157,7 @@ export default function App() {
                 theme={theme}
                 toggleTheme={toggleTheme}
                 onLogout={handleLogout}
-                onOpenStudy={() => handleStartStudy('srs', new Set())}
+                onOpenStudy={startPlanSession}
                 dueCount={dueCount}
             >
                 {view === ViewState.Dashboard && (
@@ -128,6 +165,7 @@ export default function App() {
                     session={session} user={user} cards={cards} setCards={setCards} folders={folders} setFolders={setFolders}
                     setView={setView} onStartStudy={handleStartStudy} onShowStudyConfig={() => setShowStudyConfig(true)}
                     onOpenList={setListModalConfig} onStudySingleCard={handleStudySingleCard} theme={theme} toggleTheme={toggleTheme}
+                    planSummary={plan.summary} planSettings={plan.settings} onChangePlanSettings={plan.setSettings} onStartPlan={startPlanSession}
                 />
             )}
 
@@ -135,10 +173,14 @@ export default function App() {
                 <div className="h-full flex items-center justify-center p-4 bg-slate-100/50 dark:bg-slate-900">
                     <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center p-4" />}>
                         <StudyContainer
+                            key={studySessionKey}
                             cards={studyQueue}
                             onComplete={() => setView(ViewState.Dashboard)}
                             onUpdateCard={(updated) => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
                             onProgress={recordReviewProgress}
+                            onReviewed={plan.recordReview}
+                            getMoreCards={plan.getQueue}
+                            getExtraCards={plan.getExtraQueue}
                             userId={session?.user.id}
                         />
                     </Suspense>

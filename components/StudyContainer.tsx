@@ -1,23 +1,25 @@
 import React, { useMemo, useState } from 'react';
-import { Flashcard, Difficulty } from '../types';
-import { TrophyIcon, HomeIcon } from './Icons';
+import { Flashcard } from '../types';
+import { TrophyIcon, HomeIcon, CheckCircleIcon } from './Icons';
 import FlashcardView from './FlashcardView';
 import { updateFlashcardSrs } from '../services/repositories/flashcardsRepository';
 import { chooseExercise } from '../domain/reviewExercise';
-
-type ReviewRating = 'again' | 'hard' | 'good' | 'easy';
+import { ReviewOutcome, ReviewRating, getReviewOutcome } from '../domain/srs';
+import { PORTION_SIZE, isNewCard } from '../domain/dailyPlan';
 
 interface StudyContainerProps {
     cards: Flashcard[];
     onComplete: () => void;
     onUpdateCard: (card: Flashcard) => void;
     onProgress: (amount: number) => void;
+    /** Called for every rating (daily progress + review log). */
+    onReviewed?: (event: { card: Flashcard; rating: ReviewRating; wasNew: boolean; attempt: number; exercise?: string; outcome: ReviewOutcome }) => void;
+    /** Rest of today's plan not yet in this session; used to keep the session going. */
+    getMoreCards?: (excludeIds: Set<string>) => Flashcard[];
+    /** Extra due cards beyond today's plan (offered when the plan is done). */
+    getExtraCards?: (excludeIds: Set<string>) => Flashcard[];
     userId?: string;
 }
-
-const MINUTE_MS = 60 * 1000;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
 
 /** A card answered "again" comes back after this many other cards in the same session. */
 const RELEARN_GAP = 4;
@@ -28,90 +30,23 @@ interface QueueItem {
     attempt: number;
 }
 
-const clampEase = (value: number) => Math.min(3, Math.max(1.3, value));
-
-const getReviewOutcome = (card: Flashcard, rating: ReviewRating) => {
-    const currentEase = clampEase(card.easeFactor || 2.5);
-
-    if (rating === 'again') {
-        return {
-            interval: 0,
-            nextReviewDate: Date.now() + (10 * MINUTE_MS),
-            easeFactor: clampEase(currentEase - 0.2),
-            difficulty: Difficulty.Hard,
-            countsAsSuccess: false,
-        };
-    }
-
-    if (card.interval === 0) {
-        if (rating === 'hard') {
-            return {
-                interval: 0,
-                nextReviewDate: Date.now() + (8 * HOUR_MS),
-                easeFactor: clampEase(currentEase - 0.05),
-                difficulty: Difficulty.Hard,
-                countsAsSuccess: true,
-            };
-        }
-
-        if (rating === 'easy') {
-            return {
-                interval: 3,
-                nextReviewDate: Date.now() + (3 * DAY_MS),
-                easeFactor: clampEase(currentEase + 0.15),
-                difficulty: Difficulty.Easy,
-                countsAsSuccess: true,
-            };
-        }
-
-        return {
-            interval: 1,
-            nextReviewDate: Date.now() + DAY_MS,
-            easeFactor: currentEase,
-            difficulty: Difficulty.Medium,
-            countsAsSuccess: true,
-        };
-    }
-
-    if (rating === 'hard') {
-        const interval = Math.max(card.interval + 1, Math.round(card.interval * 1.2));
-        return {
-            interval,
-            nextReviewDate: Date.now() + (interval * DAY_MS),
-            easeFactor: clampEase(currentEase - 0.15),
-            difficulty: Difficulty.Hard,
-            countsAsSuccess: true,
-        };
-    }
-
-    if (rating === 'easy') {
-        const interval = Math.max(card.interval + 2, Math.round(card.interval * currentEase * 1.3));
-        return {
-            interval,
-            nextReviewDate: Date.now() + (interval * DAY_MS),
-            easeFactor: clampEase(currentEase + 0.15),
-            difficulty: Difficulty.Easy,
-            countsAsSuccess: true,
-        };
-    }
-
-    const interval = Math.max(card.interval + 1, Math.round(card.interval * currentEase));
-    return {
-        interval,
-        nextReviewDate: Date.now() + (interval * DAY_MS),
-        easeFactor: currentEase,
-        difficulty: Difficulty.Medium,
-        countsAsSuccess: true,
-    };
+const pluralCards = (n: number) => {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'карточка';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'карточки';
+    return 'карточек';
 };
 
 const StudyContainer: React.FC<StudyContainerProps> = ({
-    cards, onComplete, onUpdateCard, onProgress, userId
+    cards, onComplete, onUpdateCard, onProgress, onReviewed, getMoreCards, getExtraCards, userId
 }) => {
     const [queue, setQueue] = useState<QueueItem[]>(() => cards.map(card => ({ card, attempt: 0 })));
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFinished, setIsFinished] = useState(false);
-    const [relearned, setRelearned] = useState(0);
+    const [phase, setPhase] = useState<'card' | 'checkpoint' | 'finished'>('card');
+    const [rated, setRated] = useState(0);
+    const [stats, setStats] = useState({ reviews: 0, fresh: 0, relearned: 0 });
+    const [extraAvailable, setExtraAvailable] = useState(0);
 
     const current = queue[currentIndex];
     const exercise = useMemo(
@@ -119,8 +54,16 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
         [current]
     );
 
+    const seenIds = (q: QueueItem[]) => new Set(q.map(item => item.card.id));
+
+    const finish = (q: QueueItem[]) => {
+        setExtraAvailable(getExtraCards?.(seenIds(q)).length ?? 0);
+        setPhase('finished');
+    };
+
     const handleResult = async (rating: ReviewRating) => {
         const currentCard = current.card;
+        const wasNew = current.attempt === 0 && isNewCard(currentCard);
         const outcome = getReviewOutcome(currentCard, rating);
 
         const updatedCard = {
@@ -132,8 +75,11 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
         };
 
         onUpdateCard(updatedCard);
-
         if (outcome.countsAsSuccess) onProgress(1);
+        onReviewed?.({ card: currentCard, rating, wasNew, attempt: current.attempt, exercise: exercise.type, outcome });
+        if (current.attempt === 0) {
+            setStats(s => wasNew ? { ...s, fresh: s.fresh + 1 } : { ...s, reviews: s.reviews + 1 });
+        }
 
         if (userId && userId !== 'offline') {
             updateFlashcardSrs(
@@ -152,47 +98,113 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
         if (rating === 'again' && current.attempt < MAX_RELEARN_ATTEMPTS) {
             const insertAt = Math.min(currentIndex + 1 + RELEARN_GAP, queue.length);
             nextQueue = [...queue.slice(0, insertAt), { card: updatedCard, attempt: current.attempt + 1 }, ...queue.slice(insertAt)];
-            setQueue(nextQueue);
-            setRelearned(n => n + 1);
+            setStats(s => ({ ...s, relearned: s.relearned + 1 }));
         }
 
-        if (currentIndex < nextQueue.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-        } else {
-            setIsFinished(true);
+        // Queue ran out: continue with the rest of today's plan
+        if (currentIndex >= nextQueue.length - 1) {
+            const more = getMoreCards?.(seenIds(nextQueue)) ?? [];
+            nextQueue = [...nextQueue, ...more.map(card => ({ card, attempt: 0 }))];
         }
+        setQueue(nextQueue);
+
+        const nextRated = rated + 1;
+        setRated(nextRated);
+
+        if (currentIndex >= nextQueue.length - 1) {
+            finish(nextQueue);
+            return;
+        }
+        setCurrentIndex(i => i + 1);
+        if (nextRated % PORTION_SIZE === 0) setPhase('checkpoint');
     };
 
-    if (isFinished) {
+    const startExtra = () => {
+        const extra = getExtraCards?.(seenIds(queue)) ?? [];
+        if (extra.length === 0) return;
+        setQueue(q => [...q, ...extra.map(card => ({ card, attempt: 0 }))]);
+        setCurrentIndex(queue.length);
+        setPhase('card');
+    };
+
+    const remainingInQueue = queue.length - currentIndex;
+    const studiedTotal = stats.reviews + stats.fresh;
+
+    const StatLine = () => (
+        <p className="mb-8 max-w-xs text-slate-500 dark:text-slate-400">
+            Повторено: <b className="text-slate-700 dark:text-slate-200">{stats.reviews}</b> · новых: <b className="text-slate-700 dark:text-slate-200">{stats.fresh}</b>
+            {stats.relearned > 0 && <> · вернулись к трудным: {stats.relearned}</>}
+        </p>
+    );
+
+    if (phase === 'checkpoint') {
         return (
-            <div className="relative flex h-full flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-800 md:mx-auto md:h-96 md:w-96">
+            <div className="relative flex h-full flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-800 md:mx-auto md:h-[28rem] md:w-96">
+                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    <CheckCircleIcon className="h-8 w-8" />
+                </div>
+                <h2 className="mb-2 text-2xl font-bold text-slate-800 dark:text-white">Порция готова!</h2>
+                <StatLine />
+                <p className="-mt-6 mb-8 text-sm text-slate-400">
+                    Осталось в плане на сегодня: {remainingInQueue} {pluralCards(remainingInQueue)}
+                </p>
+                <div className="flex w-full max-w-xs flex-col gap-2">
+                    <button onClick={() => setPhase('card')} className="rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white hover:bg-emerald-700">
+                        Продолжить
+                    </button>
+                    <button onClick={onComplete} className="rounded-xl bg-slate-100 px-6 py-3 font-semibold text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
+                        Закончить пока
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (phase === 'finished') {
+        return (
+            <div className="relative flex h-full flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-800 md:mx-auto md:h-[28rem] md:w-96">
                 <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 animate-bounce dark:bg-emerald-900/30 dark:text-emerald-400">
                     <TrophyIcon className="h-10 w-10" />
                 </div>
-                <h2 className="mb-2 text-2xl font-bold text-slate-800 dark:text-white">Сессия завершена!</h2>
-                <p className="mb-8 max-w-xs text-slate-500 dark:text-slate-400">
-                    Вы повторили {cards.length} слов(а){relearned > 0 ? `, ещё ${relearned} раз(а) вернулись к трудным` : ''}. Отличная работа!
-                </p>
-                <button
-                    onClick={onComplete}
-                    className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                >
-                    <HomeIcon className="h-5 w-5" /> На главную
-                </button>
+                <h2 className="mb-2 text-2xl font-bold text-slate-800 dark:text-white">
+                    {getMoreCards ? 'План на сегодня выполнен!' : 'Сессия завершена!'}
+                </h2>
+                {studiedTotal > 0 ? <StatLine /> : <p className="mb-8 text-slate-500">Отличная работа!</p>}
+                <div className="flex w-full max-w-xs flex-col gap-2">
+                    {extraAvailable > 0 && (
+                        <button onClick={startExtra} className="rounded-xl bg-emerald-50 px-6 py-3 font-bold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            Ещё {Math.min(extraAvailable, PORTION_SIZE)} сверх плана
+                        </button>
+                    )}
+                    <button
+                        onClick={onComplete}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                    >
+                        <HomeIcon className="h-5 w-5" /> На главную
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="h-full w-full max-w-md md:h-auto md:max-h-[85vh] md:max-w-lg md:aspect-[3/4] lg:max-w-xl">
-            <FlashcardView
-                key={`${current.card.id}-${current.attempt}`}
-                card={current.card}
-                exercise={exercise}
-                onResult={handleResult}
-                onBack={onComplete}
-                onUpdate={onUpdateCard}
-            />
+        <div className="flex h-full w-full max-w-md flex-col md:h-auto md:max-h-[85vh] md:max-w-lg md:aspect-[3/4] lg:max-w-xl">
+            <div className="mb-2 flex items-center gap-3 px-1">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${((rated % PORTION_SIZE) / PORTION_SIZE) * 100}%` }} />
+                </div>
+                <span className="text-xs font-bold text-slate-400">{rated % PORTION_SIZE}/{PORTION_SIZE}</span>
+            </div>
+            <div className="min-h-0 flex-1">
+                <FlashcardView
+                    key={`${current.card.id}-${current.attempt}`}
+                    card={current.card}
+                    exercise={exercise}
+                    onResult={handleResult}
+                    onBack={onComplete}
+                    onUpdate={onUpdateCard}
+                />
+            </div>
         </div>
     );
 };

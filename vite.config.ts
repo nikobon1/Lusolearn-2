@@ -93,9 +93,8 @@ const localGeminiProxy = (apiKey: string): Plugin => ({
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
 
-  // Get API keys from .env.local OR Vercel environment variables
+  // Gemini key is used only by the local dev proxy (server side); never inject secrets into the client bundle
   const geminiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
-  const elevenLabsKey = env.ELEVEN_LABS_API_KEY || process.env.ELEVEN_LABS_API_KEY || '';
 
   return {
     server: {
@@ -112,11 +111,6 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-    },
-    define: {
-      'process.env.API_KEY': JSON.stringify(geminiKey),
-      'process.env.GEMINI_API_KEY': JSON.stringify(geminiKey),
-      'process.env.ELEVEN_LABS_API_KEY': JSON.stringify(elevenLabsKey)
     },
     resolve: {
       alias: {

@@ -51,3 +51,34 @@ export async function callWithRetry<T>(fn: () => Promise<T>, retries = 3, delay 
     }
 }
 
+
+/** True when the AI service is unavailable for account reasons (billing, credits, key) — retrying won't help. */
+export const isAiAccountError = (error: unknown): boolean => {
+    const err = error as { status?: number; message?: string };
+    const msg = (err?.message || '').toLowerCase();
+    return err?.status === 401 || err?.status === 402 || err?.status === 403 ||
+        msg.includes('prepayment credits') || msg.includes('billing') || msg.includes('api key not valid') ||
+        msg.includes('permission_denied');
+};
+
+/** Human-readable Russian explanation of an AI request failure. */
+export const describeAiError = (error: unknown, fallback = 'Не удалось выполнить запрос к ИИ. Попробуйте ещё раз.'): string => {
+    const err = error as { status?: number; message?: string };
+    const msg = (err?.message || '').toLowerCase();
+    if (err?.status === 402 || msg.includes('prepayment credits')) {
+        return 'Закончился предоплаченный баланс Gemini. Пополните его в AI Studio (ai.studio/projects → Billing).';
+    }
+    if (msg.includes('billing') || msg.includes('outstanding balance')) {
+        return 'Google заблокировал Gemini из-за проблемы с оплатой. Проверьте биллинг в AI Studio / Google Cloud.';
+    }
+    if (err?.status === 401 || err?.status === 403 || msg.includes('api key not valid') || msg.includes('missing gemini_api_key')) {
+        return 'Нет доступа к Gemini: проверьте ключ GEMINI_API_KEY в настройках Vercel.';
+    }
+    if (err?.status === 429 || msg.includes('quota') || msg.includes('exhausted')) {
+        return 'Превышен лимит запросов к Gemini. Подождите минуту и попробуйте снова.';
+    }
+    if (err?.status === 503 || msg.includes('overloaded') || msg.includes('unavailable')) {
+        return 'Gemini сейчас перегружен. Попробуйте чуть позже.';
+    }
+    return fallback;
+};

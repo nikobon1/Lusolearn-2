@@ -175,7 +175,8 @@ const hash = (s: string) => {
  * but rotates between days so the same card is practised in different ways.
  */
 export const chooseExercise = (card: Flashcard, attempt = 0, now = Date.now()): Exercise => {
-    if (card.interval <= 0) return { type: 'recognition' };
+    // New cards and cards re-shown after a mistake in this session: plain recognition first
+    if (card.interval <= 0 || attempt > 0) return { type: 'recognition' };
 
     const day = Math.floor(now / 86_400_000);
     const seed = hash(card.id) + day + attempt;

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { LoaderIcon, CameraIcon, PlusIcon, SparklesIcon, BrainIcon } from './Icons';
 import { extractVocabulary } from '../services/geminiService';
 import { buildFlashcard } from '../services/cardFactory';
+import { describeAiError } from '../services/client';
 import { Flashcard, VocabularyItem, Folder } from '../types';
 import { notifyError } from '../lib/notifications';
 
@@ -162,7 +163,7 @@ const Creator: React.FC<Props> = ({ onCardsCreated, onCancel, folders, onCreateF
             }
         } catch (error) {
             console.error("Analysis error:", error);
-            notifyError('Не удалось проанализировать. Попробуйте еще раз.');
+            notifyError(describeAiError(error, 'Не удалось проанализировать. Попробуйте ещё раз.'), 8000);
         } finally {
             if (isMounted.current) setIsLoading(false);
         }
@@ -217,7 +218,7 @@ const Creator: React.FC<Props> = ({ onCardsCreated, onCancel, folders, onCreateF
             }
         } catch (error) {
             console.error(error);
-            notifyError('Ошибка при генерации. Часть карточек могла быть не сохранена.');
+            notifyError(describeAiError(error, 'Ошибка при генерации. Часть карточек могла быть не сохранена.'), 8000);
             if (newCards.length > 0 && isMounted.current) {
                 onCardsCreated(newCards);
             } else if (isMounted.current) {
