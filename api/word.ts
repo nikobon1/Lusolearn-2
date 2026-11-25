@@ -31,13 +31,29 @@ interface EntryRow {
 const client = (key: string): SupabaseClient =>
     createClient(SUPABASE_URL, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
+/** The model occasionally emits thousands of tabs/spaces in a row — collapse such runs. */
+const clean = (text: string | null | undefined): string =>
+    (text || '').replace(/[ \t\u00a0]{2,}/g, ' ').replace(/\s*\n\s*\n\s*(\n\s*)+/g, '\n\n').trim();
+
+const cleanExamples = (examples: unknown) =>
+    Array.isArray(examples)
+        ? examples.map((ex: any) => ({
+            ...ex,
+            sentence: clean(ex?.sentence),
+            translation: clean(ex?.translation),
+            patterns: Array.isArray(ex?.patterns)
+                ? ex.patterns.map((p: any) => ({ ...p, target: clean(p?.target), explanation: clean(p?.explanation) }))
+                : ex?.patterns,
+        }))
+        : [];
+
 const toDetails = (row: EntryRow) => ({
-    definition: row.definition || '',
-    grammarNotes: row.grammar_notes || '',
+    definition: clean(row.definition),
+    grammarNotes: clean(row.grammar_notes),
     visualPrompt: row.image_prompt || '',
     frequency: row.frequency || undefined,
     conjugation: row.conjugation || { isVerb: false },
-    examples: Array.isArray(row.examples) ? row.examples : [],
+    examples: cleanExamples(row.examples),
 });
 
 /** Same meaning? Exact sense key, or — when the word has a single entry — overlapping translation words. */
@@ -114,6 +130,9 @@ export default async function handler(req: any, res: any) {
         });
         if (!response.text) throw Object.assign(new Error('No details generated'), { status: 502 });
         details = JSON.parse(response.text);
+        details.definition = clean(details.definition);
+        details.grammarNotes = clean(details.grammarNotes);
+        details.examples = cleanExamples(details.examples);
     } catch (error: any) {
         res.status(error?.status || 500).json({ error: error?.message || 'Generation failed' });
         return;
