@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { normalizeTerm, senseKey, senseWords } from "../shared/wordKeys";
-import { buildCardDetailsRequest } from "../shared/cardDetailsSpec";
+import { normalizeTerm, senseKey, senseWords } from "../shared/wordKeys.js";
+import { buildCardDetailsRequest } from "../shared/cardDetailsSpec.js";
 
 /**
  * POST /api/word  { term, translation }
