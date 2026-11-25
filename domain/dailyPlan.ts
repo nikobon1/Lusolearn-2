@@ -29,6 +29,8 @@ export interface DailyProgress {
     reviewIds: string[];
     /** New card ids introduced today */
     newIds: string[];
+    /** Cards whose latest rating today brings them back today ("again", or "hard" on a new card) */
+    openIds?: string[];
 }
 
 /** Never studied: no rating yet. */
@@ -66,15 +68,18 @@ export interface PlanSummary {
     newAvailable: number;
 }
 
-/** Splits due reviews into cards already studied today (relearning — always shown) and the rest (limited). */
+/**
+ * Splits due reviews into relearning cards (studied today and still open — always shown) and the rest (limited).
+ * Cards studied today that are not open are skipped even if this device has a stale schedule for them
+ * (e.g. they were just reviewed on another device).
+ */
 const splitDue = (cards: Flashcard[], progress: DailyProgress, now: number) => {
     const studiedToday = new Set([...progress.reviewIds, ...progress.newIds]);
+    const open = new Set(progress.openIds || []);
     const due = getDueReviews(cards, now);
-    return {
-        due,
-        relearn: due.filter(c => studiedToday.has(c.id)),
-        fresh: due.filter(c => !studiedToday.has(c.id)),
-    };
+    const relearn = due.filter(c => studiedToday.has(c.id) && open.has(c.id));
+    const fresh = due.filter(c => !studiedToday.has(c.id));
+    return { due: [...relearn, ...fresh], relearn, fresh };
 };
 
 export const summarizePlan = (
@@ -88,7 +93,8 @@ export const summarizePlan = (
     const newDone = progress.newIds.length;
     const limitedLeft = Math.max(0, Math.min(fresh.length, settings.reviewsPerDay - reviewsDone));
     const reviewsLeft = relearn.length + limitedLeft;
-    const newPaused = due.length > BACKLOG_PAUSE_THRESHOLD;
+    // Backlog as it was at the start of the day, so the plan doesn't change mid-session
+    const newPaused = fresh.length + reviewsDone > BACKLOG_PAUSE_THRESHOLD;
     const newAvailable = getNewCards(cards).length;
     const newLeft = newPaused ? 0 : Math.max(0, Math.min(newAvailable, settings.newPerDay - newDone));
     return {

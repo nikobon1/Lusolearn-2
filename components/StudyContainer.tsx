@@ -4,7 +4,7 @@ import { TrophyIcon, HomeIcon, CheckCircleIcon } from './Icons';
 import FlashcardView from './FlashcardView';
 import { updateFlashcardSrs } from '../services/repositories/flashcardsRepository';
 import { chooseExercise } from '../domain/reviewExercise';
-import { ReviewRating, getReviewOutcome } from '../domain/srs';
+import { ReviewOutcome, ReviewRating, getReviewOutcome } from '../domain/srs';
 import { PORTION_SIZE, isNewCard } from '../domain/dailyPlan';
 
 interface StudyContainerProps {
@@ -12,8 +12,8 @@ interface StudyContainerProps {
     onComplete: () => void;
     onUpdateCard: (card: Flashcard) => void;
     onProgress: (amount: number) => void;
-    /** Called once per rated card (wasNew = it was never studied before). */
-    onStudied?: (card: Flashcard, wasNew: boolean) => void;
+    /** Called for every rating (daily progress + review log). */
+    onReviewed?: (event: { card: Flashcard; rating: ReviewRating; wasNew: boolean; attempt: number; exercise?: string; outcome: ReviewOutcome }) => void;
     /** Rest of today's plan not yet in this session; used to keep the session going. */
     getMoreCards?: (excludeIds: Set<string>) => Flashcard[];
     /** Extra due cards beyond today's plan (offered when the plan is done). */
@@ -39,7 +39,7 @@ const pluralCards = (n: number) => {
 };
 
 const StudyContainer: React.FC<StudyContainerProps> = ({
-    cards, onComplete, onUpdateCard, onProgress, onStudied, getMoreCards, getExtraCards, userId
+    cards, onComplete, onUpdateCard, onProgress, onReviewed, getMoreCards, getExtraCards, userId
 }) => {
     const [queue, setQueue] = useState<QueueItem[]>(() => cards.map(card => ({ card, attempt: 0 })));
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -76,8 +76,8 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
 
         onUpdateCard(updatedCard);
         if (outcome.countsAsSuccess) onProgress(1);
+        onReviewed?.({ card: currentCard, rating, wasNew, attempt: current.attempt, exercise: exercise.type, outcome });
         if (current.attempt === 0) {
-            onStudied?.(currentCard, wasNew);
             setStats(s => wasNew ? { ...s, fresh: s.fresh + 1 } : { ...s, reviews: s.reviews + 1 });
         }
 

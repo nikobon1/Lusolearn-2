@@ -178,7 +178,7 @@ export default function App() {
                             onComplete={() => setView(ViewState.Dashboard)}
                             onUpdateCard={(updated) => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
                             onProgress={recordReviewProgress}
-                            onStudied={plan.recordStudied}
+                            onReviewed={plan.recordReview}
                             getMoreCards={plan.getQueue}
                             getExtraCards={plan.getExtraQueue}
                             userId={session?.user.id}

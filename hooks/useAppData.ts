@@ -333,6 +333,33 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
+    // Returning to the app (e.g. after studying on another device): refresh card schedules only
+    const refreshSchedules = useCallback(async () => {
+        if (!session || offlineMode || session.user.email === 'offline@demo.com') return;
+        const { data, error } = await supabase
+            .from('flashcards')
+            .select('id, interval, ease_factor, next_review_date, difficulty')
+            .eq('user_id', session.user.id);
+        if (error || !data) return;
+        const byId = new Map(data.map(row => [row.id, row]));
+        setCards(prev => prev.map(c => {
+            const row = byId.get(c.id);
+            if (!row) return c;
+            if (row.interval === c.interval && row.next_review_date === c.nextReviewDate && row.ease_factor === c.easeFactor) return c;
+            return { ...c, interval: row.interval, easeFactor: row.ease_factor, nextReviewDate: row.next_review_date, difficulty: row.difficulty || c.difficulty };
+        }));
+    }, [session, offlineMode]);
+
+    useEffect(() => {
+        const onVisible = () => { if (document.visibilityState === 'visible') refreshSchedules(); };
+        window.addEventListener('focus', refreshSchedules);
+        document.addEventListener('visibilitychange', onVisible);
+        return () => {
+            window.removeEventListener('focus', refreshSchedules);
+            document.removeEventListener('visibilitychange', onVisible);
+        };
+    }, [refreshSchedules]);
+
     return {
         user, setUser, cards, setCards, folders, setFolders, savedStories, setSavedStories,
         loading, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
