@@ -338,7 +338,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
         if (!session || offlineMode || session.user.email === 'offline@demo.com') return;
         const { data, error } = await supabase
             .from('flashcards')
-            .select('id, interval, ease_factor, next_review_date, difficulty')
+            .select('*')
             .eq('user_id', session.user.id);
         if (error || !data) return;
         const byId = new Map(data.map(row => [row.id, row]));

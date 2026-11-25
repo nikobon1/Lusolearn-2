@@ -69,17 +69,8 @@ export const loadFrequencyDictionary = (): Promise<FrequencyEntry[]> => {
     return cache;
 };
 
-const LEADING_ARTICLE = /^(o|a|os|as|um|uma|uns|umas)\s+(?=\S)/;
-
-/** Normalizes a Portuguese term for matching: "A Casa." -> "casa". */
-export const normalizeTerm = (term: string): string =>
-    term
-        .toLowerCase()
-        .trim()
-        .replace(/[.!?¿¡,;:"«»()]/g, '')
-        .replace(/\s+/g, ' ')
-        .replace(LEADING_ARTICLE, '')
-        .trim();
+export { normalizeTerm } from '../shared/wordKeys';
+import { normalizeTerm } from '../shared/wordKeys';
 
 export const entryKey = (entry: FrequencyEntry) => normalizeTerm(entry.w);
 

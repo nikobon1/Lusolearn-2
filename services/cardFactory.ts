@@ -1,5 +1,5 @@
 import { Difficulty, Example, Flashcard } from '../types';
-import { generateCardDetails } from './vocabulary';
+import { getWordDetails } from './wordEntries';
 import { getOrGenerateImage } from './images';
 import { isAiAccountError } from './client';
 
@@ -37,7 +37,7 @@ export const buildFlashcard = async (
 
     let details;
     try {
-        details = await generateCardDetails(word);
+        details = (await getWordDetails(word, translation)).details;
     } catch (error) {
         if (!allowFallback || isAiAccountError(error)) throw error;
         console.warn(`Card details generation failed for "${word}", creating minimal card`, error);
@@ -45,9 +45,12 @@ export const buildFlashcard = async (
     }
 
     let imageUrl: string | undefined;
-    if (details.visualPrompt) {
+    // Shared image cache is keyed by word; entries filled from old cards may have no visual prompt
+    const visualPrompt = details.visualPrompt
+        || `A realistic everyday scene clearly illustrating the Portuguese word "${word}" (meaning: ${translation})`;
+    {
         try {
-            imageUrl = await getOrGenerateImage(details.visualPrompt + IMAGE_STYLE_SUFFIX, word);
+            imageUrl = await getOrGenerateImage(visualPrompt + IMAGE_STYLE_SUFFIX, word);
         } catch (imgErr) {
             console.warn('Image generation failed:', imgErr);
         }
@@ -60,7 +63,7 @@ export const buildFlashcard = async (
         grammarNotes: details.grammarNotes,
         conjugation: details.conjugation,
         imageUrl,
-        imagePrompt: details.visualPrompt,
+        imagePrompt: visualPrompt,
         frequency: frequency ?? details.frequency,
     };
 };
