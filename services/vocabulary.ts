@@ -1,6 +1,7 @@
 import { Type } from "./geminiSchema";
 import { generateContent, callWithRetry } from "./client";
 import { VocabularyItem, AICardDetails, Example } from "../types";
+import { buildCardDetailsRequest } from "../shared/cardDetailsSpec";
 
 export interface VocabularyExtractionResult {
     items: VocabularyItem[];
@@ -41,7 +42,7 @@ Text: ${JSON.stringify(trimmed)}`
     return payload?.ru?.trim() || trimmed;
 };
 
-const enforceRussianPatternExplanations = async (examples: Example[]): Promise<Example[]> => {
+export const enforceRussianPatternExplanations = async (examples: Example[]): Promise<Example[]> => {
     const toTranslate: { exIndex: number; patternIndex: number; text: string }[] = [];
 
     examples.forEach((ex, exIndex) => {
@@ -142,102 +143,7 @@ export const extractVocabulary = async (
 };
 
 export const generateCardDetails = async (word: string): Promise<AICardDetails> => {
-    const verbFormsSchema = {
-        type: Type.OBJECT,
-        properties: {
-            eu: { type: Type.STRING },
-            tu: { type: Type.STRING },
-            ele: { type: Type.STRING },
-            nos: { type: Type.STRING },
-            eles: { type: Type.STRING }
-        },
-        required: ["eu", "tu", "ele", "nos", "eles"]
-    };
-
-    const detailSchema = {
-        type: Type.OBJECT,
-        properties: {
-            definition: { type: Type.STRING },
-            grammarNotes: { type: Type.STRING },
-            visualPrompt: { type: Type.STRING },
-            frequency: {
-                type: Type.STRING,
-                enum: ["Top 500", "Top 1000", "Top 3000", "Top 5000", "10000+"]
-            },
-            conjugation: {
-                type: Type.OBJECT,
-                properties: {
-                    isVerb: { type: Type.BOOLEAN },
-                    tenses: {
-                        type: Type.OBJECT,
-                        properties: {
-                            presente: verbFormsSchema,
-                            perfeito: verbFormsSchema,
-                            imperfeito: verbFormsSchema,
-                            futuro: verbFormsSchema
-                        }
-                    }
-                },
-                required: ["isVerb"]
-            },
-            examples: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        level: { type: Type.STRING, enum: ["A1", "A2", "B1", "B2"] },
-                        sentence: { type: Type.STRING },
-                        translation: { type: Type.STRING },
-                        patterns: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    target: { type: Type.STRING },
-                                    explanation: { type: Type.STRING }
-                                },
-                                required: ["target", "explanation"]
-                            }
-                        }
-                    },
-                    required: ["level", "sentence", "translation"]
-                }
-            }
-        },
-        required: ["definition", "grammarNotes", "examples", "visualPrompt", "conjugation"]
-    };
-
-    const systemInstruction = `
-    Create a study card for: "${word}".
-    Target: European Portuguese.
-    Output Language for explanations: Russian.
-    
-    Requirements:
-    1. Definition in simple PT.
-    2. 4 Examples (A1-B2).
-    3. Visual prompt: Write a detailed prompt for generating a REALISTIC, life-like illustration of this word. 
-       The prompt should describe a concrete scene or object that represents the word's meaning.
-       Style: Modern digital art, warm colors, soft lighting, educational flashcard style.
-       Example for "o pão": "A freshly baked loaf of bread on a wooden cutting board, with steam rising, warm kitchen background"
-    3a. The visual prompt must be in English and contain one concrete real-life scene with a clear main subject.
-    3b. Use realistic photography style details: natural lighting, real textures, natural proportions, and believable environment.
-    3c. For abstract words, show an everyday human situation that clearly demonstrates the concept.
-    3d. Explicitly avoid: abstract art, symbolism, surrealism, icon style, flat vector style, watercolor style.
-    3e. Always append: "no text, no letters, no logos".
-    4. Grammar notes in Russian.
-    5. Frequency rank estimate.
-    6. Conjugation if verb (Present, Perf, Imperf, Future).
-  `;
-
-    const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
-        contents: { parts: [{ text: `Generate details for "${word}"` }] } as any,
-        config: {
-            systemInstruction: systemInstruction,
-            responseMimeType: "application/json",
-            responseSchema: detailSchema,
-        }
-    }));
+    const response = await callWithRetry(() => generateContent(buildCardDetailsRequest(word) as any));
 
     const text = response.text;
     if (!text) throw new Error("No details generated");
