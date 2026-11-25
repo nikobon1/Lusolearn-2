@@ -27,16 +27,22 @@ export const getWordDetails = async (term: string, translation: string): Promise
         response = null;
     }
 
-    if (!response || response.status === 404 || response.status === 405) {
+    const payload = response ? await response.json().catch(() => null) : null;
+
+    // Shared word service unavailable (not deployed, crashed, non-JSON error page): generate directly,
+    // so creating cards keeps working. Real AI errors (402, 429…) come back as JSON and are re-thrown below.
+    const serviceDown = !response || response.status === 404 || response.status === 405
+        || (response.status >= 500 && !payload?.error);
+    if (serviceDown) {
+        if (response) console.warn(`[word] /api/word unavailable (${response.status}), generating directly`);
         const details = await generateCardDetails(term);
         return { details, cached: false, saved: false };
     }
 
-    const payload = await response.json().catch(() => null);
     if (!response.ok || !payload?.details) {
         const message = payload?.error || `Word service error (${response.status})`;
         const error = new Error(message) as Error & { status?: number };
-        error.status = response.status;
+        error.status = response!.status;
         throw error;
     }
 
