@@ -1,4 +1,4 @@
-import { Difficulty, Flashcard } from '../types';
+import { Difficulty, Example, Flashcard } from '../types';
 import { generateCardDetails } from './vocabulary';
 import { getOrGenerateImage } from './images';
 import { isAiAccountError } from './client';
@@ -12,12 +12,14 @@ export interface BuildCardOptions {
     frequency?: string;
     /** If AI generation fails, still create a minimal card with the given translation. */
     allowFallback?: boolean;
+    /** Real usage (e.g. a line from a video lesson) shown as the first example. */
+    extraExample?: Example;
 }
 
 export const buildFlashcard = async (
     word: string,
     translation: string,
-    { folderIds, tags = [], frequency, allowFallback = false }: BuildCardOptions
+    { folderIds, tags = [], frequency, allowFallback = false, extraExample }: BuildCardOptions
 ): Promise<Flashcard> => {
     const now = Date.now();
     const base = {
@@ -39,7 +41,7 @@ export const buildFlashcard = async (
     } catch (error) {
         if (!allowFallback || isAiAccountError(error)) throw error;
         console.warn(`Card details generation failed for "${word}", creating minimal card`, error);
-        return { ...base, definition: '', examples: [], frequency };
+        return { ...base, definition: '', examples: extraExample ? [extraExample] : [], frequency };
     }
 
     let imageUrl: string | undefined;
@@ -54,7 +56,7 @@ export const buildFlashcard = async (
     return {
         ...base,
         definition: details.definition || 'Definition unavailable',
-        examples: details.examples || [],
+        examples: [...(extraExample ? [extraExample] : []), ...(details.examples || [])],
         grammarNotes: details.grammarNotes,
         conjugation: details.conjugation,
         imageUrl,

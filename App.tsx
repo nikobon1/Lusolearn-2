@@ -21,6 +21,7 @@ const StudyContainer = lazy(() => import('./components/StudyContainer'));
 const Creator = lazy(() => import('./components/Creator'));
 const StoryView = lazy(() => import('./components/StoryView'));
 const FrequencyPathView = lazy(() => import('./components/FrequencyPathView'));
+const LessonsView = lazy(() => import('./components/LessonsView'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const StudyConfigModal = lazy(() => import('./components/StudyConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -114,18 +115,21 @@ export default function App() {
 
     const isRealSession = !!session && session.user.email !== 'offline@demo.com';
 
-    // Folder for cards created from the frequency dictionary (created on first use)
-    const ensureFrequencyFolder = async (): Promise<string> => {
-        const existing = folders.find(f => f.name.toLowerCase() === FREQUENCY_FOLDER_NAME.toLowerCase());
+    // Finds a folder by name or creates it (and saves it for signed-in users)
+    const ensureFolder = async (name: string): Promise<string> => {
+        const existing = folders.find(f => f.name.toLowerCase() === name.toLowerCase());
         if (existing) return existing.id;
-        const folder: Folder = { id: self.crypto.randomUUID(), name: FREQUENCY_FOLDER_NAME, createdAt: Date.now() };
+        const folder: Folder = { id: self.crypto.randomUUID(), name, createdAt: Date.now() };
         setFolders(prev => [...prev, folder]);
         if (isRealSession && session) {
             const { error } = await createFolderRecord(folder.id, session.user.id, folder.name);
-            if (error) console.error('Failed to save frequency folder', error);
+            if (error) console.error('Failed to save folder', error);
         }
         return folder.id;
     };
+
+    // Folder for cards created from the frequency dictionary (created on first use)
+    const ensureFrequencyFolder = () => ensureFolder(FREQUENCY_FOLDER_NAME);
 
     const handleStudyCards = (toStudy: Flashcard[]) => {
         if (toStudy.length === 0) return;
@@ -209,6 +213,18 @@ export default function App() {
                         userId={session?.user.id}
                         onCardsCreated={addCards}
                         ensureFolder={ensureFrequencyFolder}
+                        onStudyCards={handleStudyCards}
+                    />
+                </Suspense>
+            )}
+
+            {view === ViewState.Lessons && (
+                <Suspense fallback={<ScreenFallback />}>
+                    <LessonsView
+                        cards={cards}
+                        userId={session?.user.id}
+                        onCardsCreated={addCards}
+                        ensureFolder={ensureFolder}
                         onStudyCards={handleStudyCards}
                     />
                 </Suspense>

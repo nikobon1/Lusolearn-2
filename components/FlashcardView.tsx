@@ -335,6 +335,14 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                                             </button>
                                         </div>
                                         <p className="text-slate-500 dark:text-slate-400 text-sm">{currentExample.translation}</p>
+                                        {currentExample.source && (
+                                            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                                🎬 из видео{currentExample.source.title ? <> «{currentExample.source.title}»</> : null}
+                                                {currentExample.source.url && (
+                                                    <a href={currentExample.source.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="ml-2 font-bold text-rose-600 hover:underline dark:text-rose-300">▶ смотреть момент</a>
+                                                )}
+                                            </p>
+                                        )}
                                     </div>
                                 ) : (
                                     <p className="text-sm text-slate-400 italic p-4">Пример для этого уровня не найден.</p>
