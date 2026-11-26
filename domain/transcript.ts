@@ -36,12 +36,49 @@ export const formatTime = (seconds: number): string => {
     return `${h > 0 ? `${h}:` : ''}${mm}:${String(s).padStart(2, '0')}`;
 };
 
+const INLINE_TIME = new RegExp(String.raw`(?:^|\s)\[?((?:\d{1,2}:)?\d{1,2}:\d{2})\]?(?=\s|$)`, 'g');
+const MAX_LINE = 300;
+const CHUNK_WORDS = 25;
+
+/**
+ * "0:01 Bom dia 0:04 Queria abrir 0:08 …" pasted as one line → one line per timestamp.
+ * Only when the line clearly is a timestamped transcript (3+ stamps, or 2+ starting with one),
+ * so "das 9:00 às 17:00" inside a normal sentence is left alone.
+ */
+const splitInlineTimestamps = (line: string): string[] => {
+    const matches = [...line.matchAll(INLINE_TIME)];
+    const startsWithTime = matches.length > 0 && line.slice(0, matches[0].index! + matches[0][0].length).trim() === matches[0][0].trim();
+    if (matches.length < 3 && !(matches.length >= 2 && startsWithTime)) return [line];
+    const out: string[] = [];
+    const head = line.slice(0, matches[0].index).trim();
+    if (head) out.push(head);
+    matches.forEach((m, i) => {
+        const start = m.index! + m[0].length;
+        const end = i + 1 < matches.length ? matches[i + 1].index! : line.length;
+        out.push(`${m[1]} ${line.slice(start, end).trim()}`.trim());
+    });
+    return out;
+};
+
+/** Auto-generated subtitles have no punctuation: cut very long lines into ~25-word pieces. */
+const chunkLongLine = (text: string): string[] => {
+    if (text.length <= MAX_LINE) return [text];
+    const sentences = splitSentences(text);
+    const pieces: string[] = [];
+    for (const s of sentences) {
+        if (s.length <= MAX_LINE) { pieces.push(s); continue; }
+        const words = s.split(/\s+/);
+        for (let i = 0; i < words.length; i += CHUNK_WORDS) pieces.push(words.slice(i, i + CHUNK_WORDS).join(' '));
+    }
+    return pieces;
+};
+
 /** Splits a long paragraph without line breaks into sentences. */
 const splitSentences = (text: string): string[] =>
     text.split(/(?<=[.!?…])\s+(?=[A-ZÀ-ÚÂÊÔÃÕÇ«"—-])/).map(s => s.trim()).filter(Boolean);
 
 export const parseTranscript = (raw: string): ParsedTranscript => {
-    const rawLines = raw.replace(/\r\n?/g, '\n').split('\n').map(l => l.trim());
+    const rawLines = raw.replace(/\r\n?/g, '\n').split('\n').map(l => l.trim()).flatMap(splitInlineTimestamps);
     const out: { time?: number; text: string }[] = [];
     let pendingTime: number | undefined;
     let sawTime = false;
@@ -80,11 +117,8 @@ export const parseTranscript = (raw: string): ParsedTranscript => {
         }
     }
 
-    let lines = out;
-    // Plain text pasted as one big paragraph: split into sentences
-    if (!sawTime && lines.length <= 3 && lines.some(l => l.text.length > 300)) {
-        lines = lines.flatMap(l => splitSentences(l.text).map(text => ({ text })));
-    }
+    // Very long lines (a pasted paragraph, unpunctuated auto-subtitles): split into readable pieces
+    const lines = out.flatMap(l => chunkLongLine(l.text).map(text => ({ time: l.time, text })));
 
     return {
         lines: lines.map((l, index) => ({ index, time: l.time, text: l.text })),

@@ -149,6 +149,7 @@ export const buildClozeOptions = (card: Flashcard): Extract<Exercise, { type: 'c
     const forms = conjugationForms(card);
     for (const ex of card.examples || []) {
         if (!ex?.sentence) continue;
+        if (ex.source && ex.sentence.length > 200) continue; // long transcript chunks make poor gap-fills
         const pos = findTermInSentence(ex.sentence, card.originalTerm, forms);
         if (!pos) continue;
         const answer = ex.sentence.slice(pos.start, pos.end);
