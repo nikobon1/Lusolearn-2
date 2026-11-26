@@ -3,6 +3,8 @@ import { Flashcard } from '../types';
 import { AnswerVerdict, Exercise, checkAnswer } from '../domain/reviewExercise';
 import { useSpeechRecording } from '../hooks/useSpeechRecording';
 import { BrainIcon, LoaderIcon, MicIcon, VolumeIcon } from './Icons';
+import VoiceMeter from './VoiceMeter';
+import { sounds } from '../lib/sounds';
 
 export interface AnswerResult {
     verdict: AnswerVerdict;
@@ -58,6 +60,7 @@ const AnswerBox: React.FC<{
         const said = ` ${plain(speech.result.heard)} `;
         const containsAnswer = plain(expected).length > 0 && said.includes(` ${plain(expected)} `);
         const verdict: AnswerVerdict = containsAnswer || score >= 85 ? 'correct' : score >= 60 ? 'almost' : 'wrong';
+        if (verdict === 'correct') sounds.success(); else if (verdict === 'almost') sounds.almost(); else sounds.error();
         onReveal({ verdict, given: speech.result.heard, expected, spoken: true });
     }, [speech.result]);
 
@@ -68,7 +71,7 @@ const AnswerBox: React.FC<{
 
     const toggleVoice = async () => {
         if (speech.isRecording) await speech.stopAndEvaluate(expected);
-        else await speech.startRecording();
+        else await speech.startRecording({ autoStopText: expected });
     };
 
     return (
@@ -98,7 +101,7 @@ const AnswerBox: React.FC<{
                     </button>
                 )}
             </div>
-            {speech.isRecording && <p className="text-center text-sm font-medium text-rose-600 dark:text-rose-400">Говорите… нажмите ещё раз, чтобы закончить</p>}
+            {(speech.isRecording || speech.isProcessing) && <VoiceMeter level={speech.level} voiceDetected={speech.voiceDetected} processing={speech.isProcessing} autoStop />}
             {allowVoice && !speech.isRecording && !speech.isProcessing && !speech.error && (
                 <p className="text-center text-xs text-slate-400">Можно напечатать или сказать вслух 🎤</p>
             )}

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Flashcard } from '../types';
 import { isPaused } from '../domain/paused';
-import { FrequencyEntry, entryKey, loadFrequencyDictionary, normalizeTerm } from '../domain/frequencyDictionary';
+import { normalizeTerm } from '../domain/frequencyDictionary';
+import { useFrequencyRanks } from '../hooks/useFrequencyRanks';
 import { XIcon } from './Icons';
 
 interface WordListModalProps {
@@ -13,19 +14,6 @@ interface WordListModalProps {
 }
 
 type Tab = 'active' | 'paused';
-
-/** Rank in the frequency dictionary (1 = most common), or null if the word is outside the top list. */
-const useFrequencyRanks = () => {
-    const [ranks, setRanks] = useState<Map<string, number> | null>(null);
-    useEffect(() => {
-        let alive = true;
-        loadFrequencyDictionary()
-            .then((dict: FrequencyEntry[]) => { if (alive) setRanks(new Map(dict.map(e => [entryKey(e), e.r]))); })
-            .catch(() => { if (alive) setRanks(new Map()); });
-        return () => { alive = false; };
-    }, []);
-    return ranks;
-};
 
 const WordListModal: React.FC<WordListModalProps> = ({ title, cards, onClose, onCardClick, onSetPaused }) => {
     const [tab, setTab] = useState<Tab>('active');
