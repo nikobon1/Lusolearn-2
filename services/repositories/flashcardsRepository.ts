@@ -58,3 +58,10 @@ export const updateFlashcardFolders = async (cardId: string, folderIds: string[]
         .update({ folder_ids: folderIds })
         .eq('id', cardId);
 };
+
+export const updateFlashcardTags = async (cardId: string, tags: string[]) => {
+    return supabase
+        .from('flashcards')
+        .update({ tags })
+        .eq('id', cardId);
+};
