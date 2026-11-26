@@ -13,7 +13,6 @@ import { createFolderRecord, deleteFolderRecord } from '../services/repositories
 import { isPaused } from '../domain/paused';
 import { deleteFlashcardsByIds, updateFlashcardFolders } from '../services/repositories/flashcardsRepository';
 import StatsWidget from './StatsWidget';
-import DailyQuestsWidget from './DailyQuestsWidget';
 import {
     FolderIcon, EditIcon, SunIcon, MoonIcon,
     LoaderIcon, SparklesIcon, ClockIcon,
@@ -353,7 +352,6 @@ const DashboardView: React.FC<DashboardProps> = ({
                     <div className="lg:col-span-4 space-y-6">
                         <DuplicatesBanner cards={cards} setCards={setCards} session={session} />
                         <DailyPlanWidget summary={planSummary} settings={planSettings} onChangeSettings={onChangePlanSettings} onStart={onStartPlan} />
-                        <DailyQuestsWidget quests={user.quests} />
                         <StatsWidget cards={cards} user={user} onOpenList={(type) => onOpenList({ title: type === 'learned' ? 'Выучено' : 'На изучении', filter: type })} />
 
                         {/* Study Actions */}
