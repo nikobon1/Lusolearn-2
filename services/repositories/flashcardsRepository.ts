@@ -1,4 +1,4 @@
-import { Difficulty } from '../../types';
+import { Difficulty, Flashcard } from '../../types';
 import { supabase } from '../supabase';
 
 /** Set once the database reports that flashcards.difficulty doesn't exist (migration not applied yet). */
@@ -34,6 +34,22 @@ export const deleteFlashcardsByIds = async (cardIds: string[]) => {
         .from('flashcards')
         .delete()
         .in('id', cardIds);
+};
+
+/** Content merged from duplicate cards (folders, tags, examples, missing details). */
+export const updateFlashcardMerged = async (card: Flashcard) => {
+    return supabase
+        .from('flashcards')
+        .update({
+            folder_ids: card.folderIds,
+            tags: card.tags,
+            examples: card.examples,
+            definition: card.definition,
+            grammar_notes: card.grammarNotes ?? null,
+            conjugation: card.conjugation ?? null,
+            image_url: card.imageUrl ?? null,
+        })
+        .eq('id', card.id);
 };
 
 export const updateFlashcardFolders = async (cardId: string, folderIds: string[]) => {

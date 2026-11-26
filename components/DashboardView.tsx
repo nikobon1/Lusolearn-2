@@ -1,5 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
+import DuplicatesBanner from './DuplicatesBanner';
 import DailyPlanWidget from './DailyPlanWidget';
 import { PlanSettings, PlanSummary } from '../domain/dailyPlan';
 import { Session } from '@supabase/supabase-js';
@@ -339,6 +340,7 @@ const DashboardView: React.FC<DashboardProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Stats & Actions */}
                     <div className="lg:col-span-4 space-y-6">
+                        <DuplicatesBanner cards={cards} setCards={setCards} session={session} />
                         <DailyPlanWidget summary={planSummary} settings={planSettings} onChangeSettings={onChangePlanSettings} onStart={onStartPlan} />
                         <DailyQuestsWidget quests={user.quests} />
                         <StatsWidget cards={cards} user={user} onOpenList={(type) => onOpenList({ title: type === 'learned' ? 'Выучено' : 'На изучении', filter: type })} />
