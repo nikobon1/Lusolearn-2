@@ -22,6 +22,7 @@ const Creator = lazy(() => import('./components/Creator'));
 const StoryView = lazy(() => import('./components/StoryView'));
 const FrequencyPathView = lazy(() => import('./components/FrequencyPathView'));
 const LessonsView = lazy(() => import('./components/LessonsView'));
+const ConjugationTrainer = lazy(() => import('./components/ConjugationTrainer'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const PracticeConfigModal = lazy(() => import('./components/PracticeConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -235,6 +236,12 @@ export default function App() {
                         ensureFolder={ensureFolder}
                         onStudyCards={handleStudyCards}
                     />
+                </Suspense>
+            )}
+
+            {view === ViewState.Conjugation && (
+                <Suspense fallback={<ScreenFallback />}>
+                    <ConjugationTrainer cards={cards} userId={session?.user.id} />
                 </Suspense>
             )}
 
