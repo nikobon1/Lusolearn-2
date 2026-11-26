@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
-    BACKLOG_PAUSE_THRESHOLD, NEW_PER_DAY_OPTIONS, PlanSettings, PlanSummary, REVIEWS_PER_DAY_OPTIONS, planRemaining,
+    BACKLOG_PAUSE_THRESHOLD, NEW_PER_DAY_OPTIONS, PlanSettings, PlanSummary, REVIEWS_PER_DAY_OPTIONS,
 } from '../domain/dailyPlan';
 import { CheckCircleIcon, SettingsIcon, TargetIcon } from './Icons';
+import { RouteStep, nextStep, routeDone } from '../domain/todayRoute';
 import { CEFR_LEVELS, CefrLevel } from '../domain/reviewExercise';
 
 interface Props {
@@ -10,22 +11,10 @@ interface Props {
     settings: PlanSettings;
     onChangeSettings: (patch: Partial<PlanSettings>) => void;
     onStart: () => void;
+    steps: RouteStep[];
+    onStep: (step: RouteStep) => void;
+    onMorePhrases: () => void;
 }
-
-const Bar: React.FC<{ label: string; done: number; left: number; color: string }> = ({ label, done, left, color }) => {
-    const total = done + left;
-    return (
-        <div>
-            <div className="mb-1 flex justify-between text-xs font-bold">
-                <span className="text-slate-600 dark:text-slate-300">{label}</span>
-                <span className="text-slate-400">{done} / {total}</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
-            </div>
-        </div>
-    );
-};
 
 const Chips: React.FC<{ options: number[]; value: number; onChange: (n: number) => void }> = ({ options, value, onChange }) => (
     <div className="flex flex-wrap gap-1">
@@ -37,16 +26,24 @@ const Chips: React.FC<{ options: number[]; value: number; onChange: (n: number) 
     </div>
 );
 
-const DailyPlanWidget: React.FC<Props> = ({ summary, settings, onChangeSettings, onStart }) => {
+const STEP_ICONS: Record<RouteStep['id'], string> = { reviews: '🔁', new: '✨', addWords: '➕', phrases: '💬', conjugation: '🔤' };
+
+/**
+ * «Занятие на сегодня»: today's route (reviews → new words → phrases → verbs) with one main button
+ * that always leads to the next step.
+ */
+const DailyPlanWidget: React.FC<Props> = ({ summary, settings, onChangeSettings, onStart, steps, onStep, onMorePhrases }) => {
     const [showSettings, setShowSettings] = useState(false);
-    const remaining = planRemaining(summary);
-    const done = remaining === 0;
+    const next = nextStep(steps);
+    const done = routeDone(steps);
+    const started = steps.some(s => s.done) || summary.reviewsDone + summary.newDone > 0;
+    const minutesLeft = steps.filter(s => !s.done && !s.skipped && !s.optional).reduce((m, s) => m + s.minutes, 0);
 
     return (
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-4 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
-                    <TargetIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /> План на сегодня
+                    <TargetIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /> Занятие на сегодня
                 </h3>
                 <button onClick={() => setShowSettings(v => !v)} className={`flex h-8 w-8 items-center justify-center rounded-full ${showSettings ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'}`} title="Настройки плана">
                     <SettingsIcon className="h-4 w-4" />
@@ -79,28 +76,51 @@ const DailyPlanWidget: React.FC<Props> = ({ summary, settings, onChangeSettings,
                 </div>
             )}
 
-            <div className="space-y-3">
-                <Bar label="Повторения" done={summary.reviewsDone} left={summary.reviewsLeft} color="bg-indigo-500" />
-                <Bar label="Новые слова" done={summary.newDone} left={summary.newLeft} color="bg-emerald-500" />
-            </div>
+            <ol className="space-y-1.5">
+                {steps.map((step, i) => {
+                    const isNext = !done && next?.id === step.id;
+                    return (
+                        <li key={step.id}>
+                            <button
+                                onClick={() => !step.skipped && onStep(step)}
+                                disabled={step.skipped}
+                                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${isNext ? 'bg-emerald-50 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:ring-emerald-800' : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'} ${step.skipped ? 'opacity-50' : ''}`}
+                            >
+                                <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-sm ${step.done ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                                    {step.done ? '✓' : STEP_ICONS[step.id] || i + 1}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className={`block text-sm font-bold ${step.done ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-white'}`}>{step.title}</span>
+                                    <span className="block text-xs text-slate-500 dark:text-slate-400">{step.detail}</span>
+                                </span>
+                                {!step.done && !step.skipped && step.minutes > 0 && <span className="flex-shrink-0 text-xs text-slate-400">~{step.minutes} мин</span>}
+                            </button>
+                        </li>
+                    );
+                })}
+            </ol>
 
             {summary.newPaused && (
                 <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
                     Накопилось {summary.totalDue} повторений — пока их больше {BACKLOG_PAUSE_THRESHOLD}, новые слова на паузе. Разберём завал за несколько дней.
                 </p>
             )}
-            {!summary.newPaused && summary.newLeft === 0 && summary.newAvailable === 0 && settings.newPerDay > 0 && (
-                <p className="mt-3 text-xs text-slate-400">Новых карточек нет — добавьте слова в «С нуля» или «Создать».</p>
-            )}
 
             {done ? (
-                <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-3 text-sm font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                    <CheckCircleIcon className="h-5 w-5" /> На сегодня всё!
-                    {summary.backlogBeyondLimit > 0 && <button onClick={onStart} className="ml-auto rounded-lg bg-white px-3 py-1 text-xs text-emerald-700 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-300">Ещё порция</button>}
+                <div className="mt-4 space-y-2 rounded-xl bg-emerald-50 px-3 py-3 dark:bg-emerald-900/20">
+                    <p className="flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                        <CheckCircleIcon className="h-5 w-5" /> На сегодня всё! 🎉
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {summary.backlogBeyondLimit > 0 && <button onClick={onStart} className="rounded-lg bg-white px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-300">Ещё порция повторений</button>}
+                        {next?.optional && <button onClick={() => onStep(next)} className="rounded-lg bg-white px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-300">{next.title}</button>}
+                        <button onClick={onMorePhrases} className="rounded-lg bg-white px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-300">Ещё фразы</button>
+                    </div>
                 </div>
             ) : (
-                <button onClick={onStart} className="mt-4 w-full rounded-2xl bg-emerald-600 py-3 font-bold text-white shadow-lg transition-colors hover:bg-emerald-700">
-                    {summary.reviewsDone + summary.newDone > 0 ? 'Продолжить' : 'Начать'} · {remaining}
+                <button onClick={() => next && onStep(next)} className="mt-4 w-full rounded-2xl bg-emerald-600 py-3 font-bold text-white shadow-lg transition-colors hover:bg-emerald-700">
+                    {started ? 'Продолжить' : 'Начать'}: {next!.title.toLowerCase()}
+                    {minutesLeft > 0 && <span className="font-medium opacity-80"> · ещё ~{minutesLeft} мин</span>}
                 </button>
             )}
             {summary.backlogBeyondLimit > 0 && !done && (

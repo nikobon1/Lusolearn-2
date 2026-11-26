@@ -244,5 +244,5 @@ export const useDailyPlan = (cards: Flashcard[], userId?: string) => {
         [cards, state.settings]
     );
 
-    return { summary, settings: state.settings, setSettings, recordReview, getQueue, getExtraQueue, refresh: syncFromServer };
+    return { summary, settings: state.settings, setSettings, recordReview, getQueue, getExtraQueue, refresh: syncFromServer, todayNewIds: state.newIds };
 };
