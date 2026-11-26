@@ -73,12 +73,17 @@ const DashboardView: React.FC<DashboardProps> = ({
     const [showImageRegenConfirm, setShowImageRegenConfirm] = useState(false);
 
     // Derived State
-    const filteredCards = useMemo(() => {
+    // A folder may exist twice under the same name (created from two places) — treat them as one.
+    // Cards pointing only at folders that no longer exist count as "Без категории".
+    const scopedCards = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
+        const knownIds = new Set(folders.map(f => f.id));
+        const activeName = folders.find(f => f.id === activeFolderId)?.name.trim().toLowerCase();
+        const activeIds = new Set(activeName ? folders.filter(f => f.name.trim().toLowerCase() === activeName).map(f => f.id) : [activeFolderId]);
         let filtered = cards.filter(c => {
             if (activeFolderId === 'all') return true;
-            if (activeFolderId === 'default') return c.folderIds.length === 0 || c.folderIds.includes('default');
-            return c.folderIds.includes(activeFolderId);
+            if (activeFolderId === 'default') return c.folderIds.length === 0 || c.folderIds.includes('default') || c.folderIds.every(id => !knownIds.has(id));
+            return c.folderIds.some(id => activeIds.has(id));
         });
 
         if (query) {
@@ -97,7 +102,11 @@ const DashboardView: React.FC<DashboardProps> = ({
                 return searchableText.includes(query);
             });
         }
+        return filtered;
+    }, [cards, folders, activeFolderId, searchQuery]);
 
+    const filteredCards = useMemo(() => {
+        let filtered = scopedCards;
         if (statusFilter === 'due') {
             filtered = filtered.filter(card => card.interval > 0 && card.nextReviewDate <= Date.now());
         } else if (statusFilter === 'new') {
@@ -123,7 +132,7 @@ const DashboardView: React.FC<DashboardProps> = ({
         }
 
         return sorted;
-    }, [cards, activeFolderId, searchQuery, statusFilter, cardSortMode, isShuffled, shuffleSeed]);
+    }, [scopedCards, statusFilter, cardSortMode, isShuffled, shuffleSeed]);
 
     useEffect(() => {
         setVisibleCount(Number.MAX_SAFE_INTEGER);
@@ -137,9 +146,10 @@ const DashboardView: React.FC<DashboardProps> = ({
     }, [folders, folderSortMode]);
 
     const dueCount = cards.filter(c => c.nextReviewDate <= Date.now()).length;
-    const dueReviewCount = cards.filter(c => c.interval > 0 && c.nextReviewDate <= Date.now()).length;
-    const newCardsCount = cards.filter(c => c.interval === 0).length;
-    const learnedCardsCount = cards.filter(c => c.interval > 0).length;
+    // Counts for the status chips — within the selected folder and search
+    const dueReviewCount = scopedCards.filter(c => c.interval > 0 && c.nextReviewDate <= Date.now()).length;
+    const newCardsCount = scopedCards.filter(c => c.interval === 0).length;
+    const learnedCardsCount = scopedCards.filter(c => c.interval > 0).length;
     const visibleCards = filteredCards.slice(0, visibleCount);
     const hasMoreCards = visibleCount < filteredCards.length;
 
@@ -468,7 +478,7 @@ const DashboardView: React.FC<DashboardProps> = ({
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                    <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'all' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>Все ({filteredCards.length})</button>
+                                    <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'all' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>Все ({scopedCards.length})</button>
                                     <button onClick={() => setStatusFilter('due')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'due' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>К повторению ({dueReviewCount})</button>
                                     <button onClick={() => setStatusFilter('new')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'new' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>Новые ({newCardsCount})</button>
                                     <button onClick={() => setStatusFilter('learned')} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${statusFilter === 'learned' ? 'bg-emerald-600 text-white' : 'border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-700 dark:hover:text-white'}`}>Выученные ({learnedCardsCount})</button>
@@ -499,7 +509,16 @@ const DashboardView: React.FC<DashboardProps> = ({
                                         </div>
                                     ))}
                                 </div>
-                                {filteredCards.length === 0 && <div className="text-center py-10 text-slate-400">В этой папке пусто.</div>}
+                                {filteredCards.length === 0 && (
+                                    scopedCards.length > 0 ? (
+                                        <div className="text-center py-10 text-slate-400">
+                                            <p>Нет слов с этим фильтром.</p>
+                                            <button onClick={() => setStatusFilter('all')} className="mt-3 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">Показать все · {scopedCards.length}</button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-10 text-slate-400">{searchQuery.trim() ? 'Ничего не найдено.' : 'В этой папке пусто.'}</div>
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>
