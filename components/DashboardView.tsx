@@ -10,6 +10,7 @@ import { regenerateMissingImages } from '../services';
 import { simpleHash } from '../lib/hash';
 import { notifyError, notifyInfo, notifySuccess } from '../lib/notifications';
 import { createFolderRecord, deleteFolderRecord } from '../services/repositories/foldersRepository';
+import { isPaused } from '../domain/paused';
 import { deleteFlashcardsByIds, updateFlashcardFolders } from '../services/repositories/flashcardsRepository';
 import StatsWidget from './StatsWidget';
 import DailyQuestsWidget from './DailyQuestsWidget';
@@ -145,9 +146,9 @@ const DashboardView: React.FC<DashboardProps> = ({
         return others;
     }, [folders, folderSortMode]);
 
-    const dueCount = cards.filter(c => c.nextReviewDate <= Date.now()).length;
+    const dueCount = cards.filter(c => !isPaused(c) && c.nextReviewDate <= Date.now()).length;
     // Counts for the status chips — within the selected folder and search
-    const dueReviewCount = scopedCards.filter(c => c.interval > 0 && c.nextReviewDate <= Date.now()).length;
+    const dueReviewCount = scopedCards.filter(c => !isPaused(c) && c.interval > 0 && c.nextReviewDate <= Date.now()).length;
     const newCardsCount = scopedCards.filter(c => c.interval === 0).length;
     const learnedCardsCount = scopedCards.filter(c => c.interval > 0).length;
     const visibleCards = filteredCards.slice(0, visibleCount);

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Auth } from './components/Auth';
 import Layout from './components/Layout';
@@ -9,7 +9,9 @@ import { useTheme } from './hooks/useTheme';
 import { useStudyState } from './hooks/useStudyState';
 import { useDailyPlan } from './hooks/useDailyPlan';
 import { planRemaining } from './domain/dailyPlan';
-import { notifyInfo } from './lib/notifications';
+import { notifyError, notifyInfo, notifySuccess } from './lib/notifications';
+import { activeCards, withPaused } from './domain/paused';
+import { updateFlashcardTags } from './services/repositories/flashcardsRepository';
 import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
 import { Flashcard, Folder, ViewState } from './types';
@@ -64,7 +66,9 @@ export default function App() {
         handleStartStudy: startFilteredStudy, handleStudySingleCard: studySingleCardRaw
     } = useStudyState(cards, setView);
 
-    const plan = useDailyPlan(cards, session?.user.id);
+    // Paused cards (rare words set aside) never enter the plan or practice
+    const studyableCards = useMemo(() => activeCards(cards), [cards]);
+    const plan = useDailyPlan(studyableCards, session?.user.id);
     // Remount the study screen for every new session
     const [studySessionKey, setStudySessionKey] = useState(0);
 
@@ -158,8 +162,25 @@ export default function App() {
     const ensureFrequencyFolder = () => ensureFolder(FREQUENCY_FOLDER_NAME);
 
     const handleStudyCards = (toStudy: Flashcard[]) => {
+        toStudy = activeCards(toStudy);
         if (toStudy.length === 0) return;
         openStudy(toStudy);
+    };
+
+    /** Put cards on pause (or return them). Progress is kept; only the tag changes. */
+    const handleSetPaused = async (ids: string[], paused: boolean) => {
+        const idSet = new Set(ids);
+        const updated = cards.filter(c => idSet.has(c.id)).map(c => withPaused(c, paused));
+        const byId = new Map(updated.map(c => [c.id, c]));
+        setCards(prev => prev.map(c => byId.get(c.id) || c));
+        if (session && session.user.email !== 'offline@demo.com') {
+            const results = await Promise.all(updated.map(c => updateFlashcardTags(c.id, c.tags || [])));
+            if (results.some(r => r.error)) {
+                notifyError('Не все изменения сохранились. Попробуйте ещё раз.');
+                return;
+            }
+        }
+        notifySuccess(paused ? `На паузе: ${updated.length}. Эти слова не будут попадаться в повторениях.` : `Возвращено в повторения: ${updated.length}`);
     };
 
     const dueCount = planRemaining(plan.summary);
@@ -312,7 +333,7 @@ export default function App() {
             {listModalConfig && (
                 <div className="absolute inset-0 z-[60] bg-black/50 backdrop-blur-sm">
                     <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center" />}>
-                        <WordListModal title={listModalConfig?.title || ''} cards={listModalConfig?.filter === 'learned' ? cards.filter(c => c.interval > 0) : cards.filter(c => c.interval === 0)} onClose={() => setListModalConfig(null)} onCardClick={handleStudySingleCard} />
+                        <WordListModal title={listModalConfig?.title || ''} cards={listModalConfig?.filter === 'learned' ? cards.filter(c => c.interval > 0) : cards.filter(c => c.interval === 0)} onClose={() => setListModalConfig(null)} onCardClick={handleStudySingleCard} onSetPaused={handleSetPaused} />
                     </Suspense>
                 </div>
             )}
@@ -320,7 +341,7 @@ export default function App() {
             {showStudyConfig && (
                 <Suspense fallback={<ScreenFallback className="fixed inset-0 z-[60] flex items-center justify-center" />}>
                     <PracticeConfigModal
-                        cards={cards}
+                        cards={studyableCards}
                         folders={folders}
                         onClose={() => setShowStudyConfig(false)}
                         onStart={(selected) => { setShowStudyConfig(false); openStudy(selected, true); }}
