@@ -111,7 +111,8 @@ export enum ViewState {
   StoryList = 'STORY_LIST',
   Frequency = 'FREQUENCY',
   Lessons = 'LESSONS',
-  Conjugation = 'CONJUGATION'
+  Conjugation = 'CONJUGATION',
+  Phrases = 'PHRASES'
 }
 
 export interface LessonItem {

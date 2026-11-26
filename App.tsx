@@ -23,6 +23,7 @@ const StoryView = lazy(() => import('./components/StoryView'));
 const FrequencyPathView = lazy(() => import('./components/FrequencyPathView'));
 const LessonsView = lazy(() => import('./components/LessonsView'));
 const ConjugationTrainer = lazy(() => import('./components/ConjugationTrainer'));
+const PhrasesView = lazy(() => import('./components/PhrasesView'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const PracticeConfigModal = lazy(() => import('./components/PracticeConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -41,7 +42,7 @@ export default function App() {
     const [view, setView] = useState<ViewState>(() => {
         try {
             const saved = sessionStorage.getItem('luso_view') as ViewState | null;
-            const restorable = [ViewState.Dashboard, ViewState.Frequency, ViewState.Lessons, ViewState.Conjugation, ViewState.StoryList, ViewState.Create];
+            const restorable = [ViewState.Dashboard, ViewState.Frequency, ViewState.Lessons, ViewState.Conjugation, ViewState.Phrases, ViewState.StoryList, ViewState.Create];
             return saved && restorable.includes(saved) ? saved : ViewState.Dashboard;
         } catch {
             return ViewState.Dashboard;
@@ -260,6 +261,12 @@ export default function App() {
             {view === ViewState.Conjugation && (
                 <Suspense fallback={<ScreenFallback />}>
                     <ConjugationTrainer cards={cards} userId={session?.user.id} />
+                </Suspense>
+            )}
+
+            {view === ViewState.Phrases && (
+                <Suspense fallback={<ScreenFallback />}>
+                    <PhrasesView cards={cards} userId={session?.user.id} onCardsCreated={addCards} ensureFolder={ensureFolder} />
                 </Suspense>
             )}
 
