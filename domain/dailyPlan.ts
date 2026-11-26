@@ -1,4 +1,5 @@
 import { Difficulty, Flashcard } from '../types';
+import { CefrLevel } from './reviewExercise';
 
 /**
  * Daily study plan (Anki-style):
@@ -11,9 +12,11 @@ import { Difficulty, Flashcard } from '../types';
 export interface PlanSettings {
     newPerDay: number;
     reviewsPerDay: number;
+    /** Learner's level: gap-fill exercises use example sentences up to this level */
+    level: CefrLevel;
 }
 
-export const DEFAULT_PLAN_SETTINGS: PlanSettings = { newPerDay: 10, reviewsPerDay: 60 };
+export const DEFAULT_PLAN_SETTINGS: PlanSettings = { newPerDay: 10, reviewsPerDay: 60, level: 'A1' };
 export const NEW_PER_DAY_OPTIONS = [0, 5, 10, 15, 20];
 export const REVIEWS_PER_DAY_OPTIONS = [30, 60, 100, 200];
 

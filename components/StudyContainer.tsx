@@ -3,7 +3,7 @@ import { Flashcard } from '../types';
 import { TrophyIcon, HomeIcon, CheckCircleIcon } from './Icons';
 import FlashcardView from './FlashcardView';
 import { updateFlashcardSrs } from '../services/repositories/flashcardsRepository';
-import { chooseExercise } from '../domain/reviewExercise';
+import { CefrLevel, chooseExercise } from '../domain/reviewExercise';
 import { ReviewOutcome, ReviewRating, getReviewOutcome } from '../domain/srs';
 import { PORTION_SIZE, isNewCard } from '../domain/dailyPlan';
 
@@ -18,6 +18,8 @@ interface StudyContainerProps {
     getMoreCards?: (excludeIds: Set<string>) => Flashcard[];
     /** Extra due cards beyond today's plan (offered when the plan is done). */
     getExtraCards?: (excludeIds: Set<string>) => Flashcard[];
+    /** Learner's level for gap-fill sentences */
+    level?: CefrLevel;
     userId?: string;
 }
 
@@ -39,7 +41,7 @@ const pluralCards = (n: number) => {
 };
 
 const StudyContainer: React.FC<StudyContainerProps> = ({
-    cards, onComplete, onUpdateCard, onProgress, onReviewed, getMoreCards, getExtraCards, userId
+    cards, onComplete, onUpdateCard, onProgress, onReviewed, getMoreCards, getExtraCards, level = 'A1' as CefrLevel, userId
 }) => {
     const [queue, setQueue] = useState<QueueItem[]>(() => cards.map(card => ({ card, attempt: 0 })));
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -50,8 +52,8 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
 
     const current = queue[currentIndex];
     const exercise = useMemo(
-        () => current ? chooseExercise(current.card, current.attempt) : { type: 'recognition' as const },
-        [current]
+        () => current ? chooseExercise(current.card, current.attempt, Date.now(), level) : { type: 'recognition' as const },
+        [current, level]
     );
 
     const seenIds = (q: QueueItem[]) => new Set(q.map(item => item.card.id));

@@ -3,6 +3,7 @@ import {
     BACKLOG_PAUSE_THRESHOLD, NEW_PER_DAY_OPTIONS, PlanSettings, PlanSummary, REVIEWS_PER_DAY_OPTIONS, planRemaining,
 } from '../domain/dailyPlan';
 import { CheckCircleIcon, SettingsIcon, TargetIcon } from './Icons';
+import { CEFR_LEVELS, CefrLevel } from '../domain/reviewExercise';
 
 interface Props {
     summary: PlanSummary;
@@ -61,6 +62,16 @@ const DailyPlanWidget: React.FC<Props> = ({ summary, settings, onChangeSettings,
                     <div>
                         <p className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-400">Повторений в день (максимум)</p>
                         <Chips options={REVIEWS_PER_DAY_OPTIONS} value={settings.reviewsPerDay} onChange={n => onChangeSettings({ reviewsPerDay: n })} />
+                    </div>
+                    <div>
+                        <p className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-400">Мой уровень (для упражнений с пропуском)</p>
+                        <div className="flex flex-wrap gap-1">
+                            {CEFR_LEVELS.map(lvl => (
+                                <button key={lvl} onClick={() => onChangeSettings({ level: lvl as CefrLevel })} className={`h-8 min-w-[2.5rem] rounded-lg px-2 text-sm font-bold ${settings.level === lvl ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                    {lvl}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <p className="text-[11px] leading-snug text-slate-400">
                         Каждое новое слово даёт ещё 5–8 повторений в ближайшие недели. Для начала разумно 5–10 новых в день.
