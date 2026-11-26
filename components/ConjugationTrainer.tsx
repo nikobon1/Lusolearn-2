@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Flashcard } from '../types';
-import { PERSONS, PERSON_LABELS, TENSES, TENSE_LABELS, Tense, conjugate } from '../domain/conjugation';
+import { PERSONS, PERSON_LABELS, TENSES, TENSE_LABELS, Tense, conjugate, ruleHint } from '../domain/conjugation';
+import type { TheoryTopic } from '../domain/conjugationTheory';
+import ConjugationTheory from './ConjugationTheory';
 import { DrillItem, DrillStats, DrillVerb, ExampleSentence, buildDrill } from '../domain/conjugationDrill';
 import { FrequencyEntry, loadFrequencyDictionary, normalizeTerm } from '../domain/frequencyDictionary';
 import { AnswerVerdict, checkAnswer, stripArticle } from '../domain/reviewExercise';
@@ -51,6 +53,9 @@ const TenseTableView: React.FC<{ verb: string; tense: Tense; highlight?: string 
 const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
     const [dictionary, setDictionary] = useState<FrequencyEntry[] | null>(null);
     const [phase, setPhase] = useState<'setup' | 'drill' | 'summary'>('setup');
+    // First visit starts with theory; after some practice — with practice
+    const [tab, setTab] = useState<'theory' | 'practice'>(() => Object.keys(readStats(userId)).length > 0 ? 'practice' : 'theory');
+    const [theoryOpen, setTheoryOpen] = useState<TheoryTopic['id'] | null>(null);
     const [source, setSource] = useState<VerbSource>(10);
     const [tenses, setTenses] = useState<Set<Tense>>(new Set(['presente']));
     const [count, setCount] = useState(10);
@@ -117,12 +122,13 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
         return byVerb;
     };
 
-    const start = async (items?: DrillItem[]) => {
+    const start = async (items?: DrillItem[], override?: { tenses: Tense[]; verbs: DrillVerb[] }) => {
         setPreparing(true);
         let drill = items;
         if (!drill) {
-            const examples = await loadExamples(selectedVerbs);
-            drill = buildDrill(selectedVerbs, [...tenses], count, readStats(userId), examples);
+            const verbs = override?.verbs ?? selectedVerbs;
+            const examples = await loadExamples(verbs);
+            drill = buildDrill(verbs, override?.tenses ?? [...tenses], count, readStats(userId), examples);
         }
         setQueue(drill);
         setIndex(0);
@@ -174,6 +180,14 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
         else setIndex(i => i + 1);
     };
 
+    // Practise a tense straight from its theory page: top-25 verbs, this tense only
+    const practiceTense = (tense: Tense) => {
+        const verbs = dictVerbs.slice(0, 25);
+        setTenses(new Set([tense]));
+        setSource(25);
+        start(undefined, { tenses: [tense], verbs });
+    };
+
     // ---------- Setup ----------
     if (phase === 'setup') {
         return (
@@ -182,9 +196,24 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
                     <header>
                         <h2 className="serif text-3xl font-bold text-slate-800 dark:text-white">Спряжения</h2>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            Впишите нужную форму глагола. Самые частые глаголы и ваши ошибки попадаются чаще. Формы — европейский португальский.
+                            Сначала правило, потом практика. Формы — европейский португальский.
                         </p>
                     </header>
+
+                    <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                        {([['theory', 'Теория'], ['practice', 'Практика']] as const).map(([id, label]) => (
+                            <button key={id} onClick={() => setTab(id)} className={`flex-1 rounded-lg py-2 text-sm font-bold transition-colors ${tab === id ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {tab === 'theory' ? (
+                        <ConjugationTheory openId={theoryOpen} onOpen={setTheoryOpen} onPractice={practiceTense} />
+                    ) : (<>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Впишите нужную форму глагола. Самые частые глаголы и ваши ошибки попадаются чаще.
+                    </p>
 
                     <section className="space-y-2 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
                         <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Какие глаголы</p>
@@ -219,6 +248,7 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
                         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-lg font-bold text-white shadow-lg hover:bg-indigo-700 disabled:opacity-50">
                         {preparing ? <LoaderIcon className="h-5 w-5 animate-spin" /> : <GridIcon className="h-5 w-5" />} Начать
                     </button>
+                    </>)}
                 </div>
             </div>
         );
@@ -254,7 +284,12 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
                         {mistakes.length > 0 && (
                             <button onClick={() => start(mistakes.map(m => m.item))} className="rounded-2xl bg-indigo-600 py-3 font-bold text-white hover:bg-indigo-700">Повторить ошибки · {mistakes.length}</button>
                         )}
-                        <button onClick={() => setPhase('setup')} className="rounded-2xl bg-slate-100 py-3 font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">Новая тренировка</button>
+                        <button onClick={() => { setTab('practice'); setPhase('setup'); }} className="rounded-2xl bg-slate-100 py-3 font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">Новая тренировка</button>
+                        {mistakes.length > 0 && (
+                            <button onClick={() => { setTab('theory'); setTheoryOpen(mistakes[0].item.tense); setPhase('setup'); }} className="rounded-2xl bg-slate-100 py-3 font-bold text-slate-700 hover:bg-slate-200 sm:col-span-2 dark:bg-slate-700 dark:text-slate-200">
+                                📖 Повторить правило: {TENSE_LABELS[mistakes[0].item.tense].pt}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -321,6 +356,11 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
                                 {checked.given && checked.verdict !== 'correct' && <p className="text-sm text-slate-500">ваш ответ: <span className="line-through">{checked.given}</span></p>}
                             </div>
                             <TenseTableView verb={current.verb.infinitive} tense={current.tense} highlight={current.person} />
+                            {checked.verdict !== 'correct' && (
+                                <p className="rounded-xl bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200">
+                                    💡 {ruleHint(current.verb.infinitive, current.tense, current.person)}
+                                </p>
+                            )}
                             <button ref={nextRef} onClick={next}
                                 className="w-full rounded-2xl bg-indigo-600 py-3 font-bold text-white hover:bg-indigo-700">
                                 {index + 1 >= queue.length ? 'Итоги' : 'Дальше'}

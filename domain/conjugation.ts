@@ -251,3 +251,34 @@ export const conjugate = (infinitive: string): Conjugation | null => {
 
 export const personsFor = (infinitive: string): Person[] =>
     IMPERSONAL.has(infinitive) ? ['ele'] : PERSONS;
+
+/** True if this verb has hand-written (irregular) forms in this tense. */
+export const isIrregularIn = (infinitive: string, tense: Tense): boolean =>
+    !!IRREGULAR[infinitive.trim().toLowerCase()]?.[tense];
+
+const ENDINGS: Record<Tense, Record<'ar' | 'er' | 'ir', string>> = {
+    presente: { ar: '-o, -as, -a, -amos, -am', er: '-o, -es, -e, -emos, -em', ir: '-o, -es, -e, -imos, -em' },
+    perfeito: { ar: '-ei, -aste, -ou, -ámos, -aram', er: '-i, -este, -eu, -emos, -eram', ir: '-i, -iste, -iu, -imos, -iram' },
+    imperfeito: { ar: '-ava, -avas, -ava, -ávamos, -avam', er: '-ia, -ias, -ia, -íamos, -iam', ir: '-ia, -ias, -ia, -íamos, -iam' },
+    futuro: { ar: 'инфинитив + -ei, -ás, -á, -emos, -ão', er: 'инфинитив + -ei, -ás, -á, -emos, -ão', ir: 'инфинитив + -ei, -ás, -á, -emos, -ão' },
+};
+
+/** One-line rule for a form, shown after an answer in the trainer. */
+export const ruleHint = (infinitive: string, tense: Tense, person: Person): string => {
+    const inf = infinitive.trim().toLowerCase();
+    if (isIrregularIn(inf, tense)) return 'Неправильный глагол в этом времени — форму нужно запомнить.';
+    const group = inf.slice(-2) as 'ar' | 'er' | 'ir';
+    if (!ENDINGS[tense][group]) return '';
+    let note = '';
+    if (tense === 'perfeito' && person === 'eu') {
+        if (inf.endsWith('car')) note = ' На письме c → qu перед e: fiquei.';
+        else if (inf.endsWith('gar')) note = ' На письме g → gu перед e: paguei.';
+        else if (inf.endsWith('çar')) note = ' На письме ç → c перед e: comecei.';
+    }
+    if (tense === 'presente' && person === 'eu') {
+        if (/cer$|cir$/.test(inf)) note = ' На письме c → ç перед o: conheço.';
+        else if (/ger$|gir$/.test(inf)) note = ' На письме g → j перед o: protejo.';
+    }
+    if (tense === 'perfeito' && person === 'nos' && group === 'ar') note = ' В Португалии с ударением: -ámos (в настоящем — -amos).';
+    return `Правильный глагол на -${group}: ${ENDINGS[tense][group]}.${note}`;
+};
