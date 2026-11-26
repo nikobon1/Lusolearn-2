@@ -36,7 +36,20 @@ const ScreenFallback = ({ className = 'h-full flex items-center justify-center p
 export default function App() {
     const [session, setSession] = useState<Session | null>(null);
     const [offlineMode, setOfflineMode] = useState(false);
-    const [view, setView] = useState<ViewState>(ViewState.Dashboard);
+    // Remember the open screen: if the phone unloads the tab in the background,
+    // reopening it returns to the same section instead of the home screen
+    const [view, setView] = useState<ViewState>(() => {
+        try {
+            const saved = sessionStorage.getItem('luso_view') as ViewState | null;
+            const restorable = [ViewState.Dashboard, ViewState.Frequency, ViewState.Lessons, ViewState.Conjugation, ViewState.StoryList, ViewState.Create];
+            return saved && restorable.includes(saved) ? saved : ViewState.Dashboard;
+        } catch {
+            return ViewState.Dashboard;
+        }
+    });
+    useEffect(() => {
+        try { sessionStorage.setItem('luso_view', view); } catch { /* storage unavailable */ }
+    }, [view]);
 
     const {
         user, cards, setCards, folders, setFolders, savedStories, setSavedStories,
@@ -97,8 +110,13 @@ export default function App() {
     } = useStoryState(cards, setView, saveStoryToDb);
 
     useEffect(() => {
-        getCurrentSession().then(currentSession => setSession(currentSession));
-        const subscription = subscribeAuthState(nextSession => setSession(nextSession));
+        // Supabase emits auth events on every return to the tab (token refresh, SIGNED_IN).
+        // Keep the same session object while the user is the same, otherwise everything that
+        // depends on it (data loading!) re-runs and the app looks like it reloads.
+        const keepIfSameUser = (next: Session | null) =>
+            setSession(prev => (prev && next && prev.user.id === next.user.id ? prev : next));
+        getCurrentSession().then(keepIfSameUser);
+        const subscription = subscribeAuthState(keepIfSameUser);
         return () => subscription.unsubscribe();
     }, []);
 
