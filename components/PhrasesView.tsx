@@ -6,12 +6,17 @@ import {
 import { loadAudio, playAudio } from '../services/geminiService';
 import { notifyError, notifySuccess } from '../lib/notifications';
 import { CheckCircleIcon, LoaderIcon, PlusIcon, VolumeIcon, XIcon } from './Icons';
+import type { PracticeLog } from '../hooks/usePracticeLog';
 
 interface Props {
     cards: Flashcard[];
     userId?: string;
     onCardsCreated: (cards: Flashcard[]) => Promise<void>;
     ensureFolder: (name: string) => Promise<string>;
+    practice: PracticeLog;
+    /** Started from «Занятие на сегодня»: a short drill in this situation, then back to the route */
+    quickStart?: { situation: Situation; count: number } | null;
+    onQuickDone?: () => void;
 }
 
 const FOLDER = 'Фразы-шаблоны';
@@ -19,13 +24,6 @@ const TAG = 'шаблон';
 const COUNTS = [10, 20];
 const REQUEUE_GAP = 3;
 
-const statsKey = (userId?: string) => `luso_phrases_${userId || 'guest'}`;
-const readStats = (userId?: string): PhraseStats => {
-    try { return JSON.parse(localStorage.getItem(statsKey(userId)) || '{}'); } catch { return {}; }
-};
-const writeStats = (userId: string | undefined, stats: PhraseStats) => {
-    try { localStorage.setItem(statsKey(userId), JSON.stringify(stats)); } catch { /* unavailable */ }
-};
 
 const SayButton: React.FC<{ text: string }> = ({ text }) => {
     const [busy, setBusy] = useState(false);
@@ -73,7 +71,7 @@ const TemplateCard: React.FC<{ t: PhraseTemplate; inCards: boolean; open: boolea
     </li>
 );
 
-const PhrasesView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFolder }) => {
+const PhrasesView: React.FC<Props> = ({ cards, onCardsCreated, ensureFolder, practice, quickStart, onQuickDone }) => {
     const [phase, setPhase] = useState<'browse' | 'drill' | 'summary'>('browse');
     const [situations, setSituations] = useState<Set<Situation>>(new Set(['cafe']));
     const [openId, setOpenId] = useState<string | null>(null);
@@ -130,8 +128,10 @@ const PhrasesView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFol
         }
     };
 
-    const start = (items?: PhraseDrillItem[]) => {
-        setQueue(items ?? buildPhraseDrill([...situations], count, readStats(userId)));
+    const readStats = (): PhraseStats => practice.stats('phrase');
+
+    const start = (items?: PhraseDrillItem[], only?: { situations: Situation[]; count: number }) => {
+        setQueue(items ?? buildPhraseDrill(only?.situations ?? [...situations], only?.count ?? count, readStats()));
         setIndex(0);
         setResults([]);
         setValue('');
@@ -142,16 +142,21 @@ const PhrasesView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFol
 
     const current = queue[index];
 
+    // Quick start from the daily route
+    const quickStarted = useRef(false);
+    useEffect(() => {
+        if (!quickStart || quickStarted.current) return;
+        quickStarted.current = true;
+        setSituations(new Set([quickStart.situation]));
+        start(undefined, { situations: [quickStart.situation], count: quickStart.count });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quickStart]);
+
     useEffect(() => {
         if (phase === 'drill' && !checked) inputRef.current?.focus({ preventScroll: true });
     }, [phase, index, checked]);
 
-    const record = (item: PhraseDrillItem, verdict: Verdict) => {
-        const stats = readStats(userId);
-        const s = stats[item.key] || { right: 0, wrong: 0 };
-        stats[item.key] = verdict === 'wrong' ? { ...s, wrong: s.wrong + 1 } : { ...s, right: s.right + 1 };
-        writeStats(userId, stats);
-    };
+    const record = (item: PhraseDrillItem, verdict: Verdict) => practice.record('phrase', item.key, verdict);
 
     const check = (giveUp = false) => {
         if (!current || checked) return;
@@ -178,10 +183,7 @@ const PhrasesView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFol
         setChecked({ ...checked, verdict: 'correct', overridden: true });
         if (!current.retry) {
             setResults(prev => prev.map(r => (r.item.key === current.key ? { ...r, verdict: 'correct' } : r)));
-            const stats = readStats(userId);
-            const s = stats[current.key] || { right: 0, wrong: 0 };
-            stats[current.key] = { right: s.right + 1, wrong: Math.max(0, s.wrong - 1) };
-            writeStats(userId, stats);
+            practice.record('phrase', current.key, 'override');
             setQueue(prev => prev.filter((q, i) => !(i > index && q.retry && q.key === current.key)));
         }
     };
@@ -218,6 +220,9 @@ const PhrasesView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFol
                     )}
                     <div className="grid gap-2 sm:grid-cols-2">
                         {wrong.length > 0 && <button onClick={() => start(wrong.map(w => w.item))} className="rounded-2xl bg-emerald-600 py-3 font-bold text-white hover:bg-emerald-700">Повторить ошибки · {wrong.length}</button>}
+                        {quickStart && onQuickDone && (
+                            <button onClick={onQuickDone} className="rounded-2xl bg-emerald-600 py-3 font-bold text-white hover:bg-emerald-700 sm:col-span-2">Дальше по занятию →</button>
+                        )}
                         <button onClick={() => setPhase('browse')} className="rounded-2xl bg-slate-100 py-3 font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">К фразам</button>
                     </div>
                 </div>

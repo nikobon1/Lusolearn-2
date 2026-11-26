@@ -11,6 +11,11 @@ import { useDailyPlan } from './hooks/useDailyPlan';
 import { planRemaining } from './domain/dailyPlan';
 import { notifyError, notifyInfo, notifySuccess } from './lib/notifications';
 import { activeCards, withPaused } from './domain/paused';
+import { usePracticeLog } from './hooks/usePracticeLog';
+import { CONJUGATIONS_PER_DAY, PHRASES_PER_DAY, RouteStep, buildTodayRoute } from './domain/todayRoute';
+import { answeredOn, dayKey } from './domain/practiceLog';
+import type { Situation } from './domain/phraseTemplates';
+import { Topic, loadFrequencyDictionary, normalizeTerm } from './domain/frequencyDictionary';
 import { updateFlashcardTags } from './services/repositories/flashcardsRepository';
 import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
@@ -69,6 +74,30 @@ export default function App() {
     // Paused cards (rare words set aside) never enter the plan or practice
     const studyableCards = useMemo(() => activeCards(cards), [cards]);
     const plan = useDailyPlan(studyableCards, session?.user.id);
+    const practiceLog = usePracticeLog(session?.user.id);
+
+    // «Занятие на сегодня»
+    const [topicByTerm, setTopicByTerm] = useState<Map<string, Topic>>(new Map());
+    useEffect(() => {
+        loadFrequencyDictionary()
+            .then(dict => setTopicByTerm(new Map(dict.filter(e => e.t).map(e => [normalizeTerm(e.w), e.t as Topic]))))
+            .catch(() => { /* phrases fall back to the least practised situation */ });
+    }, []);
+    const routeSteps = useMemo(() => {
+        const todayNew = new Set(plan.todayNewIds);
+        const todayTopics = cards
+            .filter(c => todayNew.has(c.id))
+            .map(c => topicByTerm.get(normalizeTerm(c.originalTerm)))
+            .filter((t): t is Topic => !!t);
+        const hasVerbs = studyableCards.some(c => c.conjugation?.isVerb || c.tags?.includes('глагол'));
+        return buildTodayRoute({ summary: plan.summary, settings: plan.settings, entries: practiceLog.entries, todayTopics, hasVerbs });
+    }, [plan.summary, plan.settings, plan.todayNewIds, practiceLog.entries, cards, studyableCards, topicByTerm]);
+
+    /** A short drill launched from the route; cleared when the learner goes elsewhere. */
+    const [quick, setQuick] = useState<{ view: ViewState; situation?: Situation; count: number; key: number } | null>(null);
+    useEffect(() => {
+        if (quick && view !== quick.view) setQuick(null);
+    }, [view, quick]);
     // Remount the study screen for every new session
     const [studySessionKey, setStudySessionKey] = useState(0);
 
@@ -167,6 +196,23 @@ export default function App() {
         openStudy(toStudy);
     };
 
+    const remainingToday = (kind: 'phrase' | 'conjugation', perDay: number) =>
+        Math.max(1, perDay - answeredOn(practiceLog.entries, kind, dayKey(Date.now())).length);
+
+    const handleRouteStep = (step: RouteStep) => {
+        if (step.id === 'reviews' || step.id === 'new') return startPlanSession();
+        if (step.id === 'addWords') return setView(ViewState.Frequency);
+        if (step.id === 'phrases') {
+            setQuick({ view: ViewState.Phrases, situation: step.situation, count: step.done ? PHRASES_PER_DAY : remainingToday('phrase', PHRASES_PER_DAY), key: Date.now() });
+            return setView(ViewState.Phrases);
+        }
+        if (step.id === 'conjugation') {
+            setQuick({ view: ViewState.Conjugation, count: step.done ? CONJUGATIONS_PER_DAY : remainingToday('conjugation', CONJUGATIONS_PER_DAY), key: Date.now() });
+            return setView(ViewState.Conjugation);
+        }
+    };
+    const backToRoute = () => { setQuick(null); setView(ViewState.Dashboard); };
+
     /** Put cards on pause (or return them). Progress is kept; only the tag changes. */
     const handleSetPaused = async (ids: string[], paused: boolean) => {
         const idSet = new Set(ids);
@@ -217,6 +263,7 @@ export default function App() {
                     setView={setView} onStartStudy={handleStartStudy} onShowStudyConfig={() => setShowStudyConfig(true)}
                     onOpenList={setListModalConfig} onStudySingleCard={handleStudySingleCard} theme={theme} toggleTheme={toggleTheme}
                     planSummary={plan.summary} planSettings={plan.settings} onChangePlanSettings={plan.setSettings} onStartPlan={startPlanSession}
+                    routeSteps={routeSteps} onRouteStep={handleRouteStep}
                 />
             )}
 
@@ -281,13 +328,15 @@ export default function App() {
 
             {view === ViewState.Conjugation && (
                 <Suspense fallback={<ScreenFallback />}>
-                    <ConjugationTrainer cards={cards} userId={session?.user.id} />
+                    <ConjugationTrainer key={quick?.view === ViewState.Conjugation ? quick.key : 'free'} cards={studyableCards} practice={practiceLog}
+                        quickStart={quick?.view === ViewState.Conjugation ? { count: quick.count } : null} onQuickDone={backToRoute} />
                 </Suspense>
             )}
 
             {view === ViewState.Phrases && (
                 <Suspense fallback={<ScreenFallback />}>
-                    <PhrasesView cards={cards} userId={session?.user.id} onCardsCreated={addCards} ensureFolder={ensureFolder} />
+                    <PhrasesView key={quick?.view === ViewState.Phrases ? quick.key : 'free'} cards={cards} userId={session?.user.id} onCardsCreated={addCards} ensureFolder={ensureFolder}
+                        practice={practiceLog} quickStart={quick?.view === ViewState.Phrases && quick.situation ? { situation: quick.situation, count: quick.count } : null} onQuickDone={backToRoute} />
                 </Suspense>
             )}
 

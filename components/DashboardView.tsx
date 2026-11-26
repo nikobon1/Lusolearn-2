@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import DuplicatesBanner from './DuplicatesBanner';
 import DailyPlanWidget from './DailyPlanWidget';
+import type { RouteStep } from '../domain/todayRoute';
 import { PlanSettings, PlanSummary } from '../domain/dailyPlan';
 import { Session } from '@supabase/supabase-js';
 import { Flashcard, UserProfile, Folder, ViewState } from '../types';
@@ -36,6 +37,8 @@ interface DashboardProps {
     planSettings: PlanSettings;
     onChangePlanSettings: (patch: Partial<PlanSettings>) => void;
     onStartPlan: () => void;
+    routeSteps: RouteStep[];
+    onRouteStep: (step: RouteStep) => void;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
 }
@@ -112,7 +115,7 @@ const StudyModeButton: React.FC<{ mode: StudyMode; open: boolean; onToggleInfo: 
 const DashboardView: React.FC<DashboardProps> = ({
     session, user, cards, setCards, folders, setFolders,
     setView, onStartStudy, onShowStudyConfig, onOpenList, onStudySingleCard,
-    planSummary, planSettings, onChangePlanSettings, onStartPlan,
+    planSummary, planSettings, onChangePlanSettings, onStartPlan, routeSteps, onRouteStep,
     theme, toggleTheme
 }) => {
     // Local State for Dashboard UI
@@ -421,7 +424,8 @@ const DashboardView: React.FC<DashboardProps> = ({
                     {/* Left Column: Stats & Actions */}
                     <div className="lg:col-span-4 space-y-6">
                         <DuplicatesBanner cards={cards} setCards={setCards} session={session} />
-                        <DailyPlanWidget summary={planSummary} settings={planSettings} onChangeSettings={onChangePlanSettings} onStart={onStartPlan} />
+                        <DailyPlanWidget summary={planSummary} settings={planSettings} onChangeSettings={onChangePlanSettings} onStart={onStartPlan}
+                            steps={routeSteps} onStep={onRouteStep} onMorePhrases={() => { const p = routeSteps.find(s => s.id === 'phrases'); if (p) onRouteStep(p); }} />
                         <StatsWidget cards={cards} user={user} onOpenList={(type) => onOpenList({ title: type === 'learned' ? 'Выучено' : 'На изучении', filter: type })} />
 
                         {/* Study Actions */}

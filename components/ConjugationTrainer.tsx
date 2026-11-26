@@ -8,23 +8,21 @@ import { FrequencyEntry, loadFrequencyDictionary, normalizeTerm } from '../domai
 import { AnswerVerdict, checkAnswer, stripArticle } from '../domain/reviewExercise';
 import { supabase } from '../services/supabase';
 import { CheckCircleIcon, GridIcon, LoaderIcon, XIcon } from './Icons';
+import type { PracticeLog } from '../hooks/usePracticeLog';
+import type { PracticeVerdict } from '../domain/practiceLog';
 
 interface Props {
     cards: Flashcard[];
-    userId?: string;
+    practice: PracticeLog;
+    /** Started from «Занятие на сегодня»: a short drill, then back to the route */
+    quickStart?: { count: number } | null;
+    onQuickDone?: () => void;
 }
 
 type VerbSource = 10 | 25 | 50 | 100 | 'mine';
 const COUNTS = [10, 20, 30];
 const REQUEUE_GAP = 3;
 
-const statsKey = (userId?: string) => `luso_conj_${userId || 'guest'}`;
-const readStats = (userId?: string): DrillStats => {
-    try { return JSON.parse(localStorage.getItem(statsKey(userId)) || '{}'); } catch { return {}; }
-};
-const writeStats = (userId: string | undefined, stats: DrillStats) => {
-    try { localStorage.setItem(statsKey(userId), JSON.stringify(stats)); } catch { /* storage unavailable */ }
-};
 
 interface QueueItem extends DrillItem { retry?: boolean }
 interface Result { item: DrillItem; given: string; verdict: AnswerVerdict }
@@ -50,11 +48,27 @@ const TenseTableView: React.FC<{ verb: string; tense: Tense; highlight?: string 
     );
 };
 
-const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
+/**
+ * Tenses for a quick drill: the present until it's solid, then also the tenses already practised.
+ */
+const quickTenses = (stats: DrillStats): Tense[] => {
+    const practised = new Set<Tense>();
+    let presentRight = 0;
+    for (const [key, s] of Object.entries(stats)) {
+        const tense = key.split('|')[1] as Tense;
+        practised.add(tense);
+        if (tense === 'presente') presentRight += s.right;
+    }
+    if (presentRight < 40) return ['presente'];
+    return TENSES.filter(t => practised.has(t) || t === 'perfeito');
+};
+
+const ConjugationTrainer: React.FC<Props> = ({ cards, practice, quickStart, onQuickDone }) => {
+    const readStats = (): DrillStats => practice.stats('conjugation');
     const [dictionary, setDictionary] = useState<FrequencyEntry[] | null>(null);
     const [phase, setPhase] = useState<'setup' | 'drill' | 'summary'>('setup');
     // First visit starts with theory; after some practice — with practice
-    const [tab, setTab] = useState<'theory' | 'practice'>(() => Object.keys(readStats(userId)).length > 0 ? 'practice' : 'theory');
+    const [tab, setTab] = useState<'theory' | 'practice'>(() => Object.keys(practice.stats('conjugation')).length > 0 || quickStart ? 'practice' : 'theory');
     const [theoryOpen, setTheoryOpen] = useState<TheoryTopic['id'] | null>(null);
     const [source, setSource] = useState<VerbSource>(10);
     const [tenses, setTenses] = useState<Set<Tense>>(new Set(['presente']));
@@ -122,13 +136,13 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
         return byVerb;
     };
 
-    const start = async (items?: DrillItem[], override?: { tenses: Tense[]; verbs: DrillVerb[] }) => {
+    const start = async (items?: DrillItem[], override?: { tenses: Tense[]; verbs: DrillVerb[]; count?: number }) => {
         setPreparing(true);
         let drill = items;
         if (!drill) {
             const verbs = override?.verbs ?? selectedVerbs;
             const examples = await loadExamples(verbs);
-            drill = buildDrill(verbs, override?.tenses ?? [...tenses], count, readStats(userId), examples);
+            drill = buildDrill(verbs, override?.tenses ?? [...tenses], override?.count ?? count, readStats(), examples);
         }
         setQueue(drill);
         setIndex(0);
@@ -157,12 +171,7 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
 
         if (!current.retry) {
             setResults(prev => [...prev, { item: current, given, verdict }]);
-            const stats = readStats(userId);
-            const s = stats[current.key] || { right: 0, wrong: 0 };
-            stats[current.key] = verdict === 'correct' ? { ...s, right: s.right + 1 }
-                : verdict === 'almost' ? { right: s.right + 1, wrong: s.wrong + 0.5 }
-                : { ...s, wrong: s.wrong + 1 };
-            writeStats(userId, stats);
+            practice.record('conjugation', current.key, verdict as PracticeVerdict);
         }
         if (verdict === 'wrong' && !current.retry) {
             setQueue(prev => {
@@ -179,6 +188,18 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
         if (index + 1 >= queue.length) setPhase('summary');
         else setIndex(i => i + 1);
     };
+
+    // Quick start from the daily route: your verbs (or the most frequent), once the dictionary is loaded
+    const quickStarted = useRef(false);
+    useEffect(() => {
+        if (!quickStart || quickStarted.current || !dictionary) return;
+        quickStarted.current = true;
+        const verbs = myVerbs.length >= 3 ? myVerbs.slice(0, 30) : dictVerbs.slice(0, 25);
+        const quick = quickTenses(readStats());
+        setTenses(new Set(quick));
+        start(undefined, { tenses: quick, verbs, count: quickStart.count });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quickStart, dictionary]);
 
     // Practise a tense straight from its theory page: top-25 verbs, this tense only
     const practiceTense = (tense: Tense) => {
@@ -281,6 +302,9 @@ const ConjugationTrainer: React.FC<Props> = ({ cards, userId }) => {
                         </ul>
                     )}
                     <div className="grid gap-2 sm:grid-cols-2">
+                        {quickStart && onQuickDone && (
+                            <button onClick={onQuickDone} className="rounded-2xl bg-emerald-600 py-3 font-bold text-white hover:bg-emerald-700 sm:col-span-2">Дальше по занятию →</button>
+                        )}
                         {mistakes.length > 0 && (
                             <button onClick={() => start(mistakes.map(m => m.item))} className="rounded-2xl bg-indigo-600 py-3 font-bold text-white hover:bg-indigo-700">Повторить ошибки · {mistakes.length}</button>
                         )}
