@@ -133,6 +133,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<TranscriptionRes
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+            mimeType: audioBlob.type || 'audio/webm',
             config: {
                 encoding: 'WEBM_OPUS',
                 sampleRateHertz: 48000,
@@ -145,9 +146,10 @@ export async function transcribeAudio(audioBlob: Blob): Promise<TranscriptionRes
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => null);
         console.error('[Speech] ❌ API Error:', error);
-        throw new Error(error.error?.message || 'Speech recognition failed');
+        const detail = typeof error?.error === 'string' ? error.error : error?.error?.message;
+        throw new Error(detail || `Speech recognition failed (${response.status})`);
     }
 
     const data = await response.json();

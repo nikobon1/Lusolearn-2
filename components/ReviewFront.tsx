@@ -37,6 +37,9 @@ const ExerciseLabel: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 );
 
 /** Text input + "check" / "don't remember" (+ optional voice answer) for production and cloze. */
+/** Lowercase, no punctuation, single spaces (accents kept — speech recognition writes them correctly). */
+const plain = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}\s'-]/gu, ' ').replace(/\s+/g, ' ').trim();
+
 const AnswerBox: React.FC<{
     expected: string;
     onReveal: (result?: AnswerResult) => void;
@@ -51,7 +54,10 @@ const AnswerBox: React.FC<{
     useEffect(() => {
         if (!speech.result) return;
         const score = speech.result.score;
-        const verdict: AnswerVerdict = score >= 85 ? 'correct' : score >= 60 ? 'almost' : 'wrong';
+        // Cloze: the learner may say just the word or the whole sentence — the word must be in it
+        const said = ` ${plain(speech.result.heard)} `;
+        const containsAnswer = plain(expected).length > 0 && said.includes(` ${plain(expected)} `);
+        const verdict: AnswerVerdict = containsAnswer || score >= 85 ? 'correct' : score >= 60 ? 'almost' : 'wrong';
         onReveal({ verdict, given: speech.result.heard, expected, spoken: true });
     }, [speech.result]);
 
@@ -93,6 +99,9 @@ const AnswerBox: React.FC<{
                 )}
             </div>
             {speech.isRecording && <p className="text-center text-sm font-medium text-rose-600 dark:text-rose-400">Говорите… нажмите ещё раз, чтобы закончить</p>}
+            {allowVoice && !speech.isRecording && !speech.isProcessing && !speech.error && (
+                <p className="text-center text-xs text-slate-400">Можно напечатать или сказать вслух 🎤</p>
+            )}
             {speech.error && <p className="text-center text-sm text-rose-600 dark:text-rose-400">{speech.error}</p>}
             <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => onReveal()} className="rounded-2xl bg-slate-100 py-3 font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600">
@@ -134,7 +143,7 @@ const ReviewFront: React.FC<Props> = ({ card, exercise, onReveal, onPlayWord, is
                     <p className="mb-6 rounded-xl bg-amber-50 px-3 py-1.5 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
                         Подсказка: {card.translation}{exercise.lemmaHint ? <> · <span className="font-semibold">{exercise.lemmaHint}</span> (нужна форма)</> : null}
                     </p>
-                    <AnswerBox expected={exercise.answer} onReveal={onReveal} />
+                    <AnswerBox expected={exercise.answer} onReveal={onReveal} allowVoice />
                 </div>
             </div>
         );
