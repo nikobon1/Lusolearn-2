@@ -185,6 +185,7 @@ export default function App() {
                             onReviewed={plan.recordReview}
                             getMoreCards={plan.getQueue}
                             getExtraCards={plan.getExtraQueue}
+                            level={plan.settings.level}
                             userId={session?.user.id}
                         />
                     </Suspense>

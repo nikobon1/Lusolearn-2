@@ -142,14 +142,32 @@ const conjugationForms = (card: Flashcard): string[] => {
     return Object.values(tenses).flatMap(forms => Object.values(forms || {}) as string[]);
 };
 
-/** All gap-fill variants available for this card (one per example that contains the term). */
-export const buildClozeOptions = (card: Flashcard): Extract<Exercise, { type: 'cloze' }>[] => {
+export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2';
+export const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2'];
+const levelRank = (level?: string) => {
+    const i = CEFR_LEVELS.indexOf(level as CefrLevel);
+    return i === -1 ? 0 : i;
+};
+
+const wordCount = (s: string) => s.trim().split(/\s+/).length;
+
+/**
+ * Gap-fill variants for this card, only from examples at or below the learner's level,
+ * simplest first (lowest level, then shortest sentence).
+ * Lines from videos (natural speech) are used from A2 up, and only if short.
+ */
+export const buildClozeOptions = (card: Flashcard, maxLevel: CefrLevel = 'A1'): Extract<Exercise, { type: 'cloze' }>[] => {
     const lemma = stripArticle(card.originalTerm.trim());
-    const options: Extract<Exercise, { type: 'cloze' }>[] = [];
+    const options: (Extract<Exercise, { type: 'cloze' }> & { _rank: number; _len: number })[] = [];
     const forms = conjugationForms(card);
+    const maxRank = levelRank(maxLevel);
     for (const ex of card.examples || []) {
         if (!ex?.sentence) continue;
-        if (ex.source && ex.sentence.length > 200) continue; // long transcript chunks make poor gap-fills
+        if (ex.source) {
+            if (maxRank < 1 || wordCount(ex.sentence) > 12) continue;
+        } else if (levelRank(ex.level) > maxRank) {
+            continue;
+        }
         const pos = findTermInSentence(ex.sentence, card.originalTerm, forms);
         if (!pos) continue;
         const answer = ex.sentence.slice(pos.start, pos.end);
@@ -160,9 +178,13 @@ export const buildClozeOptions = (card: Flashcard): Extract<Exercise, { type: 'c
             after: ex.sentence.slice(pos.end),
             translation: ex.translation,
             lemmaHint: answer.toLowerCase() !== lemma.toLowerCase() ? lemma : undefined,
+            _rank: ex.source ? maxRank : levelRank(ex.level),
+            _len: ex.sentence.length,
         });
     }
-    return options;
+    return options
+        .sort((a, b) => a._rank - b._rank || a._len - b._len)
+        .map(({ _rank, _len, ...opt }) => opt);
 };
 
 const hash = (s: string) => {
@@ -175,19 +197,21 @@ const hash = (s: string) => {
  * Picks the exercise. Deterministic for a card on a given day/attempt,
  * but rotates between days so the same card is practised in different ways.
  */
-export const chooseExercise = (card: Flashcard, attempt = 0, now = Date.now()): Exercise => {
+export const chooseExercise = (card: Flashcard, attempt = 0, now = Date.now(), maxLevel: CefrLevel = 'A1'): Exercise => {
     // New cards and cards re-shown after a mistake in this session: plain recognition first
     if (card.interval <= 0 || attempt > 0) return { type: 'recognition' };
 
     const day = Math.floor(now / 86_400_000);
     const seed = hash(card.id) + day + attempt;
-    const clozes = buildClozeOptions(card);
+    const clozes = buildClozeOptions(card, maxLevel);
+    // Rotate only among the simplest sentences (the lowest available level, up to two shortest)
+    const easiest = clozes.slice(0, Math.min(2, clozes.length));
 
     if (card.interval < 3) {
-        return clozes.length ? clozes[seed % clozes.length] : { type: 'recognition' };
+        return easiest.length ? easiest[seed % easiest.length] : { type: 'recognition' };
     }
 
     // Mature card: alternate production and cloze
-    if (clozes.length && seed % 2 === 1) return clozes[seed % clozes.length];
+    if (easiest.length && seed % 2 === 1) return easiest[seed % easiest.length];
     return { type: 'production' };
 };
