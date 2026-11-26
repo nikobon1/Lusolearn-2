@@ -40,6 +40,75 @@ interface DashboardProps {
     toggleTheme: () => void;
 }
 
+type StudyModeId = 'practice' | 'conjugation' | 'phrases' | 'story';
+
+interface StudyMode {
+    id: StudyModeId;
+    title: string;
+    subtitle: string;
+    details: string;
+    icon: React.FC<{ className?: string }>;
+    tone: string;
+    iconTone: string;
+}
+
+const STUDY_MODES: StudyMode[] = [
+    {
+        id: 'practice', title: 'Свободная тренировка', subtitle: 'Прогнать любые свои слова вне плана',
+        details: 'Выберите папку, тег или частотность — и повторите эти карточки сколько угодно раз. Расписание повторений и план дня не меняются, так что можно спокойно освежить тему перед разговором или походом к врачу. Слова на паузе сюда не попадают.',
+        icon: ChartIcon,
+        tone: 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500',
+        iconTone: 'bg-slate-50 dark:bg-slate-600',
+    },
+    {
+        id: 'conjugation', title: 'Тренажёр спряжений', subtitle: 'Формы глаголов: теория и практика',
+        details: 'Вкладка «Теория» — окончания по группам (-ar, -er, -ir), времена и неправильные глаголы с объяснениями. Вкладка «Практика» — видите глагол, лицо и время, вписываете форму (например, ir · nós · presente → vamos). Ответ проверяется сразу, при ошибке показывается правило.',
+        icon: GridIcon,
+        tone: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
+        iconTone: 'bg-white dark:bg-indigo-900/50 shadow-sm',
+    },
+    {
+        id: 'phrases', title: 'Фразы-шаблоны', subtitle: 'Готовые конструкции для бытовых ситуаций',
+        details: 'Шаблоны вроде «Queria …, se faz favor» или «Onde fica …?» по ситуациям: кафе, магазин, транспорт, врач, документы, общение. Сначала смотрите шаблон с примерами и пояснением, потом тренируетесь: видите фразу по-русски и собираете её по-португальски. Помогает начать говорить, даже зная мало слов.',
+        icon: BookIcon,
+        tone: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/30',
+        iconTone: 'bg-white dark:bg-emerald-900/50 shadow-sm',
+    },
+    {
+        id: 'story', title: 'История', subtitle: 'Короткий текст из ваших слов',
+        details: 'ИИ пишет небольшую историю на португальском из ваших слов — из выбранных папок, самых частотных или недавно добавленных. Текст можно прослушать и посмотреть перевод. Знакомые слова в живом контексте запоминаются лучше, чем по одной карточке. Истории можно сохранять и перечитывать.',
+        icon: BookIcon,
+        tone: 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-100 dark:border-amber-800/30 hover:bg-amber-100 dark:hover:bg-amber-900/30',
+        iconTone: 'bg-white dark:bg-amber-900/50 shadow-sm',
+    },
+];
+
+const StudyModeButton: React.FC<{ mode: StudyMode; open: boolean; onToggleInfo: () => void; onClick: () => void }> = ({ mode, open, onToggleInfo, onClick }) => {
+    const Icon = mode.icon;
+    return (
+        <div className={`rounded-2xl border transition-all ${mode.tone}`}>
+            <div className="flex items-center gap-1 pr-2">
+                <button onClick={onClick} title={mode.details} className="flex min-w-0 flex-1 items-center gap-3 p-4 text-left">
+                    <div className={`flex-shrink-0 rounded-full p-2 ${mode.iconTone}`}><Icon className="h-5 w-5" /></div>
+                    <div className="min-w-0">
+                        <p className="font-bold">{mode.title}</p>
+                        <p className="text-xs font-medium opacity-70">{mode.subtitle}</p>
+                    </div>
+                </button>
+                <button
+                    onClick={onToggleInfo}
+                    aria-label={`Как работает: ${mode.title}`}
+                    aria-expanded={open}
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold opacity-60 hover:opacity-100 ${open ? 'bg-black/5 opacity-100 dark:bg-white/10' : ''}`}
+                >
+                    ?
+                </button>
+            </div>
+            {open && <p className="px-4 pb-4 text-sm leading-relaxed opacity-90">{mode.details}</p>}
+        </div>
+    );
+};
+
 const DashboardView: React.FC<DashboardProps> = ({
     session, user, cards, setCards, folders, setFolders,
     setView, onStartStudy, onShowStudyConfig, onOpenList, onStudySingleCard,
@@ -52,6 +121,7 @@ const DashboardView: React.FC<DashboardProps> = ({
     const [newFolderName, setNewFolderName] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'due' | 'new' | 'learned'>('all');
+    const [openModeInfo, setOpenModeInfo] = useState<string | null>(null);
     const [cardSortMode, setCardSortMode] = useState<'newest' | 'oldest' | 'alpha' | 'due'>('newest');
     const [isShuffled, setIsShuffled] = useState(false);
     const [shuffleSeed, setShuffleSeed] = useState(0);
@@ -356,22 +426,20 @@ const DashboardView: React.FC<DashboardProps> = ({
 
                         {/* Study Actions */}
                         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-3">
-                            <button onClick={onShowStudyConfig} className="w-full p-4 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-all flex items-center gap-3">
-                                <div className="p-2 bg-slate-50 dark:bg-slate-600 rounded-full"><ChartIcon className="w-5 h-5" /></div>
-                                <span>Свободная тренировка</span>
-                            </button>
-                            <button onClick={() => setView(ViewState.Conjugation)} className="w-full p-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-bold rounded-2xl border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all flex items-center gap-3">
-                                <div className="p-2 bg-white dark:bg-indigo-900/50 rounded-full shadow-sm"><GridIcon className="w-5 h-5" /></div>
-                                <span>Тренажёр спряжений</span>
-                            </button>
-                            <button onClick={() => setView(ViewState.Phrases)} className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 font-bold rounded-2xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all flex items-center gap-3">
-                                <div className="p-2 bg-white dark:bg-emerald-900/50 rounded-full shadow-sm"><BookIcon className="w-5 h-5" /></div>
-                                <span>Фразы-шаблоны</span>
-                            </button>
-                            <button onClick={() => setView(ViewState.StoryList)} className="w-full p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 font-bold rounded-2xl border border-amber-100 dark:border-amber-800/30 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all flex items-center gap-3">
-                                <div className="p-2 bg-white dark:bg-amber-900/50 rounded-full shadow-sm"><BookIcon className="w-5 h-5" /></div>
-                                <span>История</span>
-                            </button>
+                            {STUDY_MODES.map(mode => (
+                                <StudyModeButton
+                                    key={mode.id}
+                                    mode={mode}
+                                    open={openModeInfo === mode.id}
+                                    onToggleInfo={() => setOpenModeInfo(v => (v === mode.id ? null : mode.id))}
+                                    onClick={() => {
+                                        if (mode.id === 'practice') onShowStudyConfig();
+                                        else if (mode.id === 'conjugation') setView(ViewState.Conjugation);
+                                        else if (mode.id === 'phrases') setView(ViewState.Phrases);
+                                        else setView(ViewState.StoryList);
+                                    }}
+                                />
+                            ))}
                         </div>
 
                         {/* Folders Widget */}
