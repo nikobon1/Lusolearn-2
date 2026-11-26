@@ -5,7 +5,8 @@ import FlashcardView from './FlashcardView';
 import { updateFlashcardSrs } from '../services/repositories/flashcardsRepository';
 import { CefrLevel, chooseExercise } from '../domain/reviewExercise';
 import { ReviewOutcome, ReviewRating, getReviewOutcome } from '../domain/srs';
-import { PORTION_SIZE, isNewCard } from '../domain/dailyPlan';
+import { PORTION_SIZE, isNewCard, uniqueByTerm } from '../domain/dailyPlan';
+import { normalizeTerm } from '../shared/wordKeys';
 
 interface StudyContainerProps {
     cards: Flashcard[];
@@ -118,7 +119,9 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
 
         // Queue ran out: continue with the rest of today's plan
         if (!practice && currentIndex >= nextQueue.length - 1) {
-            const more = getMoreCards?.(seenIds(nextQueue)) ?? [];
+            // skip duplicates of words already in this session (same word added twice to the deck)
+            const sessionTerms = new Set<string>(nextQueue.map(item => normalizeTerm(item.card.originalTerm)));
+            const more = uniqueByTerm(getMoreCards?.(seenIds(nextQueue)) ?? [], sessionTerms);
             nextQueue = [...nextQueue, ...more.map(card => ({ card, attempt: 0 }))];
         }
         setQueue(nextQueue);

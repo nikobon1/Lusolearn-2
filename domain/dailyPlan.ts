@@ -1,5 +1,20 @@
 import { Difficulty, Flashcard } from '../types';
 import { CefrLevel } from './reviewExercise';
+import { normalizeTerm } from '../shared/wordKeys';
+
+/**
+ * One card per word in a session: if the deck has duplicates (the same word added twice),
+ * the second copy waits — otherwise it looks like "the same card came back".
+ */
+export const uniqueByTerm = (cards: Flashcard[], seenTerms: Set<string> = new Set()): Flashcard[] => {
+    const seen = new Set(seenTerms);
+    return cards.filter(c => {
+        const key = normalizeTerm(c.originalTerm);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+};
 
 /**
  * Daily study plan (Anki-style):
@@ -143,7 +158,7 @@ export const buildPlanQueue = (
     const newCards = getNewCards(cards)
         .filter(c => !exclude.has(c.id))
         .slice(0, summary.newLeft);
-    return interleave(reviews, newCards);
+    return uniqueByTerm(interleave(reviews, newCards));
 };
 
 /** Remaining cards in today's plan (for the badge in navigation). */

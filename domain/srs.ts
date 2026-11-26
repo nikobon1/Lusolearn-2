@@ -85,6 +85,8 @@ export const getReviewOutcome = (
     } else {
         interval = Math.max(card.interval + 1, Math.round(card.interval * ease));
     }
-    interval = fuzzInterval(interval, random);
+    // The random spread must never undercut the minimum step (e.g. "easy" after 1 day → at least 3 days)
+    const minimum = card.interval + (rating === 'easy' ? 2 : 1);
+    interval = Math.max(minimum, fuzzInterval(interval, random));
     return { interval, nextReviewDate: scheduled(interval, now), easeFactor, difficulty, countsAsSuccess: true };
 };
