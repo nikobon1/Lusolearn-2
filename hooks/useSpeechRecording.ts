@@ -51,9 +51,10 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
 
             streamRef.current = stream;
 
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'audio/webm;codecs=opus'
-            });
+            // Safari/iPhone can't record WebM — use whatever the browser supports
+            const preferred = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+            const mimeType = preferred.find(t => typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(t));
+            const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
 
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
@@ -114,7 +115,7 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                     // Wait a moment for any pending data
                     await new Promise(r => setTimeout(r, 50));
 
-                    const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
+                    const audioBlob = new Blob(chunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'audio/webm' });
                     console.log('[Speech] 💾 Total blob size:', audioBlob.size, 'bytes');
 
                     if (audioBlob.size < 1000) {
