@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Flashcard, LessonItem, VideoLesson } from '../types';
 import { TranscriptLine, extractYouTubeId, formatTime, parseTranscript, youtubeLink } from '../domain/transcript';
 import { FrequencyEntry, buildCardKeySet, entryKey, loadFrequencyDictionary, normalizeTerm, rankToFrequency } from '../domain/frequencyDictionary';
-import { stripArticle } from '../domain/reviewExercise';
+import { findTermInSentence, stripArticle } from '../domain/reviewExercise';
 import { analyzeTranscript } from '../services/lessons';
 import { buildFlashcard } from '../services/cardFactory';
 import { describeAiError } from '../services/client';
@@ -31,6 +31,13 @@ const findLine = (item: LessonItem, lines: TranscriptLine[]): TranscriptLine | u
     const needle = stripArticle(item.term).toLowerCase();
     return lines.find(l => l.text.toLowerCase().includes(needle));
 };
+
+/** A transcript line is a good card example only if it is short and really contains the word/phrase. */
+const usableLine = (item: LessonItem, line?: TranscriptLine): line is TranscriptLine =>
+    !!line && line.text.length <= 250 && (
+        !!findTermInSentence(line.text, item.term)
+        || line.text.toLowerCase().includes(stripArticle(item.term).toLowerCase().replace(/[.!?…]+$/, ''))
+    );
 
 const TimeLink: React.FC<{ videoId?: string; time?: number }> = ({ videoId, time }) => {
     if (time === undefined) return null;
@@ -144,7 +151,7 @@ const LessonsView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFol
                     tags: [LESSON_TAG, ...(item.kind === 'phrase' ? ['фраза'] : [])],
                     frequency: rank ? rankToFrequency(rank) : undefined,
                     allowFallback: true,
-                    extraExample: line ? {
+                    extraExample: usableLine(item, line) ? {
                         level: 'A1',
                         sentence: line.text,
                         translation: item.lineTranslation,

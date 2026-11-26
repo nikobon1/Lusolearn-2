@@ -132,9 +132,14 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
         await processAudioPlayback('example', text);
     };
 
+    // Generated examples by level; lines from video lessons are shown separately and never take a level slot
+    const levelExamples = useMemo(() => card.examples.filter(ex => !ex.source), [card.examples]);
+    const videoExamples = useMemo(() => card.examples.filter(ex => ex.source), [card.examples]);
+    const [showFullVideo, setShowFullVideo] = useState(false);
+
     const currentExample = useMemo(() => {
-        return card.examples.find(ex => ex.level === activeLevel) || card.examples[0];
-    }, [card.examples, activeLevel]);
+        return levelExamples.find(ex => ex.level === activeLevel) || levelExamples[0];
+    }, [levelExamples, activeLevel]);
 
     // Helper to highlight patterns in text
     const renderSentenceWithHighlights = (example: Example) => {
@@ -335,19 +340,38 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                                             </button>
                                         </div>
                                         <p className="text-slate-500 dark:text-slate-400 text-sm">{currentExample.translation}</p>
-                                        {currentExample.source && (
-                                            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                                🎬 из видео{currentExample.source.title ? <> «{currentExample.source.title}»</> : null}
-                                                {currentExample.source.url && (
-                                                    <a href={currentExample.source.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="ml-2 font-bold text-rose-600 hover:underline dark:text-rose-300">▶ смотреть момент</a>
-                                                )}
-                                            </p>
-                                        )}
                                     </div>
                                 ) : (
                                     <p className="text-sm text-slate-400 italic p-4">Пример для этого уровня не найден.</p>
                                 )}
                             </div>
+
+                            {/* Lines from video lessons — separate from the level examples */}
+                            {videoExamples.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2 tracking-wider">🎬 Из видео</h4>
+                                    {videoExamples.map((ex, i) => {
+                                        const long = ex.sentence.length > 220;
+                                        return (
+                                            <div key={i} className="p-4 mb-2 bg-rose-50/50 dark:bg-rose-900/10 rounded-2xl border border-rose-100 dark:border-rose-800/30">
+                                                <p className={`text-slate-800 dark:text-slate-200 font-serif leading-relaxed ${long && !showFullVideo ? 'line-clamp-3' : ''}`}>{ex.sentence.replace(/^\[?(\d{1,2}:)?\d{1,2}:\d{2}\]?\s*/, '')}</p>
+                                                {long && (
+                                                    <button onClick={(e) => { e.stopPropagation(); setShowFullVideo(v => !v); }} className="mt-1 text-xs font-bold text-slate-400 hover:text-slate-600">
+                                                        {showFullVideo ? 'Свернуть' : 'Показать полностью'}
+                                                    </button>
+                                                )}
+                                                {ex.translation && <p className="mt-1 text-slate-500 dark:text-slate-400 text-sm">{ex.translation}</p>}
+                                                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                                    {ex.source?.title ? <>«{ex.source.title}»</> : null}
+                                                    {ex.source?.url && (
+                                                        <a href={ex.source.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="ml-2 font-bold text-rose-600 hover:underline dark:text-rose-300">▶ смотреть момент</a>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             {/* Grammar Notes */}
                             {card.grammarNotes && (
