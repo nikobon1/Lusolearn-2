@@ -5,6 +5,19 @@ import { playAudio, loadAudio, getOrGenerateAudio, preloadAudio, translateExplan
 import { useSpeechRecording } from '../hooks/useSpeechRecording';
 import { Exercise } from '../domain/reviewExercise';
 import ReviewFront, { AnswerResult } from './ReviewFront';
+import { describeAiError } from '../services/client';
+
+const DEFINITION_CACHE_KEY = 'luso_definition_ru';
+const readDefinitionCache = (): Record<string, string> => {
+    try { return JSON.parse(localStorage.getItem(DEFINITION_CACHE_KEY) || '{}'); } catch { return {}; }
+};
+const writeDefinitionCache = (source: string, ru: string) => {
+    try {
+        const cache = readDefinitionCache();
+        cache[source] = ru;
+        localStorage.setItem(DEFINITION_CACHE_KEY, JSON.stringify(cache));
+    } catch { /* storage full/unavailable — translation still shown */ }
+};
 
 type Rating = 'again' | 'hard' | 'good' | 'easy';
 
@@ -37,6 +50,26 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
     const [playingTarget, setPlayingTarget] = useState<'main' | 'example' | null>(null);
     const [selectedPattern, setSelectedPattern] = useState<Pattern | null>(null);
     const [selectedPatternExplanation, setSelectedPatternExplanation] = useState<string>('');
+
+    // Russian translation of the (Portuguese) definition — on demand, cached on this device
+    const [definitionRu, setDefinitionRu] = useState<{ shown: boolean; text?: string; loading?: boolean; error?: string }>(() => {
+        const cached = readDefinitionCache()[(card.definition || '').trim()];
+        return { shown: false, text: cached };
+    });
+    const toggleDefinitionRu = async () => {
+        if (definitionRu.shown) return setDefinitionRu(s => ({ ...s, shown: false }));
+        if (definitionRu.text) return setDefinitionRu(s => ({ ...s, shown: true }));
+        const source = (card.definition || '').trim();
+        if (!source) return;
+        setDefinitionRu({ shown: true, loading: true });
+        try {
+            const ru = await translateExplanationToRussian(source);
+            writeDefinitionCache(source, ru);
+            setDefinitionRu({ shown: true, text: ru });
+        } catch (error) {
+            setDefinitionRu({ shown: true, error: describeAiError(error, 'Не удалось перевести. Попробуйте ещё раз.') });
+        }
+    };
 
     // Restored Features State
     const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
@@ -300,13 +333,28 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                                 </div>
                             )}
 
-                            {/* Definition */}
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2 tracking-wider">Определение</h4>
-                                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm md:text-base italic bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                                    "{card.definition}"
-                                </p>
-                            </div>
+                            {/* Definition (Portuguese) with an on-demand Russian translation */}
+                            {card.definition && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Определение</h4>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); toggleDefinitionRu(); }}
+                                            disabled={definitionRu.loading}
+                                            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold transition-colors ${definitionRu.shown ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300'}`}
+                                        >
+                                            {definitionRu.loading ? <LoaderIcon className="h-3 w-3 animate-spin" /> : '🇷🇺'} {definitionRu.shown ? 'Скрыть перевод' : 'Перевод'}
+                                        </button>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                                        <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm md:text-base italic">"{card.definition}"</p>
+                                        {definitionRu.shown && definitionRu.text && (
+                                            <p className="mt-2 border-t border-slate-200 pt-2 text-sm leading-relaxed text-slate-600 dark:border-slate-600 dark:text-slate-300">{definitionRu.text}</p>
+                                        )}
+                                        {definitionRu.error && <p className="mt-2 text-xs text-rose-500">{definitionRu.error}</p>}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Context / Examples with Level Tabs */}
                             <div>

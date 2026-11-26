@@ -353,6 +353,10 @@ const DashboardView: React.FC<DashboardProps> = ({
                                 <div className="p-2 bg-white dark:bg-indigo-900/50 rounded-full shadow-sm"><GridIcon className="w-5 h-5" /></div>
                                 <span>Тренажёр спряжений</span>
                             </button>
+                            <button onClick={() => setView(ViewState.Phrases)} className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 font-bold rounded-2xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all flex items-center gap-3">
+                                <div className="p-2 bg-white dark:bg-emerald-900/50 rounded-full shadow-sm"><BookIcon className="w-5 h-5" /></div>
+                                <span>Фразы-шаблоны</span>
+                            </button>
                             <button onClick={() => setView(ViewState.StoryList)} className="w-full p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 font-bold rounded-2xl border border-amber-100 dark:border-amber-800/30 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all flex items-center gap-3">
                                 <div className="p-2 bg-white dark:bg-amber-900/50 rounded-full shadow-sm"><BookIcon className="w-5 h-5" /></div>
                                 <span>История</span>

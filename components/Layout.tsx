@@ -75,6 +75,9 @@ const Layout: React.FC<LayoutProps> = ({
                     <button onClick={() => setView(ViewState.Conjugation)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all ${view === ViewState.Conjugation ? 'bg-emerald-50 font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
                         <GridIcon className="h-5 w-5" /> Спряжения
                     </button>
+                    <button onClick={() => setView(ViewState.Phrases)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all ${view === ViewState.Phrases ? 'bg-emerald-50 font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                        <BookIcon className="h-5 w-5" /> Фразы
+                    </button>
 
                     <div className="my-4 border-t border-slate-100 pt-4 dark:border-slate-700">
                         <button onClick={() => setView(ViewState.Create)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg transition-all hover:bg-emerald-700">
@@ -134,7 +137,7 @@ const Layout: React.FC<LayoutProps> = ({
                             <span className="text-[10px] font-bold uppercase tracking-wider">С нуля</span>
                         </button>
 
-                        <button onClick={() => setShowMobileMenu(true)} className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-colors ${showMobileMenu || view === ViewState.Lessons || view === ViewState.Conjugation || view === ViewState.StoryList || view === ViewState.Story ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                        <button onClick={() => setShowMobileMenu(true)} className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-colors ${showMobileMenu || view === ViewState.Lessons || view === ViewState.Conjugation || view === ViewState.Phrases || view === ViewState.StoryList || view === ViewState.Story ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
                             <SettingsIcon className="h-5 w-5" />
                             <span className="text-[10px] font-bold uppercase tracking-wider">Ещё</span>
                         </button>
@@ -144,6 +147,10 @@ const Layout: React.FC<LayoutProps> = ({
                 {showMobileMenu && (
                     <div className="fixed inset-0 z-[60] bg-slate-950/35 backdrop-blur-sm md:hidden" onClick={() => setShowMobileMenu(false)}>
                         <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] mx-auto max-w-md rounded-[28px] border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-700 dark:bg-slate-800" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => handleViewChange(ViewState.Phrases)} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
+                                <BookIcon className="h-5 w-5" />
+                                <span className="font-semibold">Фразы-шаблоны</span>
+                            </button>
                             <button onClick={() => handleViewChange(ViewState.Conjugation)} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
                                 <GridIcon className="h-5 w-5" />
                                 <span className="font-semibold">Спряжения</span>
