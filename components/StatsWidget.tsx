@@ -10,6 +10,13 @@ interface StatsWidgetProps {
 
 const StatsWidget: React.FC<StatsWidgetProps> = ({ cards, user, onOpenList }) => {
     const [range, setRange] = useState<'7d' | '30d'>('7d');
+    const [open, setOpen] = useState(() => {
+        try { return localStorage.getItem('luso_stats_open') === '1'; } catch { return false; }
+    });
+    const toggleOpen = () => setOpen(v => {
+        try { localStorage.setItem('luso_stats_open', v ? '0' : '1'); } catch { /* ignore */ }
+        return !v;
+    });
     
     const days = range === '7d' ? 7 : 30;
     const now = new Date();
@@ -38,13 +45,33 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({ cards, user, onOpenList }) =>
 
     const areaPath = `M0,50 ${points} L100,50 Z`;
 
+    if (!open) {
+        return (
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <button onClick={toggleOpen} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                    <ChartIcon className="h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <span className="font-bold text-slate-800 dark:text-white">Статистика</span>
+                    <span className="truncate text-xs text-slate-400">+{addedCount} за {days} дн</span>
+                </button>
+                <button
+                    onClick={() => onOpenList('learned')}
+                    className="flex-shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300"
+                >
+                    Выучено {learnedCountTotal}
+                </button>
+                <button onClick={toggleOpen} aria-label="Развернуть статистику" className="flex-shrink-0 px-1 text-slate-400 hover:text-slate-600">▾</button>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden">
              <div className="flex justify-between items-center mb-6">
-                 <div className="flex items-center gap-2">
+                 <button onClick={toggleOpen} className="flex items-center gap-2 text-left">
                      <ChartIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                      <h3 className="font-bold text-slate-800 dark:text-white">Статистика</h3>
-                 </div>
+                     <span className="text-slate-400">▴</span>
+                 </button>
                  <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
                      <button 
                         onClick={() => setRange('7d')}
