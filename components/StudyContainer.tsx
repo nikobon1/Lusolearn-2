@@ -20,6 +20,8 @@ interface StudyContainerProps {
     getExtraCards?: (excludeIds: Set<string>) => Flashcard[];
     /** Learner's level for gap-fill sentences */
     level?: CefrLevel;
+    /** Free practice: nothing is saved (schedule, plan, log, XP stay untouched) */
+    practice?: boolean;
     userId?: string;
 }
 
@@ -41,7 +43,7 @@ const pluralCards = (n: number) => {
 };
 
 const StudyContainer: React.FC<StudyContainerProps> = ({
-    cards, onComplete, onUpdateCard, onProgress, onReviewed, getMoreCards, getExtraCards, level = 'A1' as CefrLevel, userId
+    cards, onComplete, onUpdateCard, onProgress, onReviewed, getMoreCards, getExtraCards, level = 'A1' as CefrLevel, practice = false, userId
 }) => {
     const [queue, setQueue] = useState<QueueItem[]>(() => cards.map(card => ({ card, attempt: 0 })));
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,6 +51,8 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
     const [rated, setRated] = useState(0);
     const [stats, setStats] = useState({ reviews: 0, fresh: 0, relearned: 0 });
     const [extraAvailable, setExtraAvailable] = useState(0);
+    // Free practice: first-attempt results per card (true = remembered)
+    const [practiceResults, setPracticeResults] = useState<Map<string, boolean>>(new Map());
 
     const current = queue[currentIndex];
     const exercise = useMemo(
@@ -59,7 +63,7 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
     const seenIds = (q: QueueItem[]) => new Set(q.map(item => item.card.id));
 
     const finish = (q: QueueItem[]) => {
-        setExtraAvailable(getExtraCards?.(seenIds(q)).length ?? 0);
+        setExtraAvailable(practice ? 0 : getExtraCards?.(seenIds(q)).length ?? 0);
         setPhase('finished');
     };
 
@@ -76,14 +80,21 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
             difficulty: outcome.difficulty,
         };
 
-        onUpdateCard(updatedCard);
-        if (outcome.countsAsSuccess) onProgress(1);
-        onReviewed?.({ card: currentCard, rating, wasNew, attempt: current.attempt, exercise: exercise.type, outcome });
-        if (current.attempt === 0) {
-            setStats(s => wasNew ? { ...s, fresh: s.fresh + 1 } : { ...s, reviews: s.reviews + 1 });
+        if (practice) {
+            // Free practice: remember the first answer per card for the summary, save nothing
+            if (current.attempt === 0) {
+                setPracticeResults(prev => new Map(prev).set(currentCard.id, rating === 'good' || rating === 'easy'));
+            }
+        } else {
+            onUpdateCard(updatedCard);
+            if (outcome.countsAsSuccess) onProgress(1);
+            onReviewed?.({ card: currentCard, rating, wasNew, attempt: current.attempt, exercise: exercise.type, outcome });
+            if (current.attempt === 0) {
+                setStats(s => wasNew ? { ...s, fresh: s.fresh + 1 } : { ...s, reviews: s.reviews + 1 });
+            }
         }
 
-        if (userId && userId !== 'offline') {
+        if (!practice && userId && userId !== 'offline') {
             updateFlashcardSrs(
                 currentCard.id,
                 outcome.interval,
@@ -99,12 +110,14 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
         let nextQueue = queue;
         if (rating === 'again' && current.attempt < MAX_RELEARN_ATTEMPTS) {
             const insertAt = Math.min(currentIndex + 1 + RELEARN_GAP, queue.length);
-            nextQueue = [...queue.slice(0, insertAt), { card: updatedCard, attempt: current.attempt + 1 }, ...queue.slice(insertAt)];
+            // In practice the card keeps its real state; in a real session it carries the new schedule
+            const again = practice ? currentCard : updatedCard;
+            nextQueue = [...queue.slice(0, insertAt), { card: again, attempt: current.attempt + 1 }, ...queue.slice(insertAt)];
             setStats(s => ({ ...s, relearned: s.relearned + 1 }));
         }
 
         // Queue ran out: continue with the rest of today's plan
-        if (currentIndex >= nextQueue.length - 1) {
+        if (!practice && currentIndex >= nextQueue.length - 1) {
             const more = getMoreCards?.(seenIds(nextQueue)) ?? [];
             nextQueue = [...nextQueue, ...more.map(card => ({ card, attempt: 0 }))];
         }
@@ -118,7 +131,7 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
             return;
         }
         setCurrentIndex(i => i + 1);
-        if (nextRated % PORTION_SIZE === 0) setPhase('checkpoint');
+        if (!practice && nextRated % PORTION_SIZE === 0) setPhase('checkpoint');
     };
 
     const startExtra = () => {
@@ -126,6 +139,17 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
         if (extra.length === 0) return;
         setQueue(q => [...q, ...extra.map(card => ({ card, attempt: 0 }))]);
         setCurrentIndex(queue.length);
+        setPhase('card');
+    };
+
+    const retryHard = () => {
+        const hardIds = new Set([...practiceResults.entries()].filter(([, ok]) => !ok).map(([id]) => id));
+        const hard = queue.filter((item, i, arr) => item.attempt === 0 && hardIds.has(item.card.id) && arr.findIndex(x => x.card.id === item.card.id) === i);
+        if (hard.length === 0) return;
+        setQueue(hard.map(item => ({ card: item.card, attempt: 0 })));
+        setPracticeResults(new Map());
+        setCurrentIndex(0);
+        setRated(0);
         setPhase('card');
     };
 
@@ -162,6 +186,32 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
         );
     }
 
+    if (phase === 'finished' && practice) {
+        const total = practiceResults.size;
+        const remembered = [...practiceResults.values()].filter(Boolean).length;
+        const hardCount = total - remembered;
+        return (
+            <div className="relative flex h-full flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-800 md:mx-auto md:h-[28rem] md:w-96">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300">
+                    <TrophyIcon className="h-10 w-10" />
+                </div>
+                <h2 className="mb-2 text-2xl font-bold text-slate-800 dark:text-white">Тренировка завершена</h2>
+                <p className="mb-1 text-slate-600 dark:text-slate-300">Вспомнили сразу: <b>{remembered}</b> из <b>{total}</b></p>
+                <p className="mb-8 text-xs text-slate-400">Расписание повторений не изменилось</p>
+                <div className="flex w-full max-w-xs flex-col gap-2">
+                    {hardCount > 0 && (
+                        <button onClick={retryHard} className="rounded-xl bg-sky-600 px-6 py-3 font-bold text-white hover:bg-sky-700">
+                            Повторить трудные · {hardCount}
+                        </button>
+                    )}
+                    <button onClick={onComplete} className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600">
+                        <HomeIcon className="h-5 w-5" /> На главную
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (phase === 'finished') {
         return (
             <div className="relative flex h-full flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-700 dark:bg-slate-800 md:mx-auto md:h-[28rem] md:w-96">
@@ -191,11 +241,16 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
 
     return (
         <div className="flex h-full w-full max-w-md flex-col md:h-auto md:max-h-[85vh] md:max-w-lg md:aspect-[3/4] lg:max-w-xl">
+            {practice && (
+                <p className="mb-2 rounded-lg bg-sky-50 px-3 py-1.5 text-center text-xs font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
+                    Свободная тренировка · расписание не меняется
+                </p>
+            )}
             <div className="mb-2 flex items-center gap-3 px-1">
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                    <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${((rated % PORTION_SIZE) / PORTION_SIZE) * 100}%` }} />
+                    <div className={`h-full rounded-full transition-all ${practice ? 'bg-sky-500' : 'bg-emerald-500'}`} style={{ width: `${practice ? (currentIndex / Math.max(queue.length, 1)) * 100 : ((rated % PORTION_SIZE) / PORTION_SIZE) * 100}%` }} />
                 </div>
-                <span className="text-xs font-bold text-slate-400">{rated % PORTION_SIZE}/{PORTION_SIZE}</span>
+                <span className="text-xs font-bold text-slate-400">{practice ? `${currentIndex}/${queue.length}` : `${rated % PORTION_SIZE}/${PORTION_SIZE}`}</span>
             </div>
             <div className="min-h-0 flex-1">
                 <FlashcardView

@@ -23,7 +23,7 @@ const StoryView = lazy(() => import('./components/StoryView'));
 const FrequencyPathView = lazy(() => import('./components/FrequencyPathView'));
 const LessonsView = lazy(() => import('./components/LessonsView'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
-const StudyConfigModal = lazy(() => import('./components/StudyConfigModal'));
+const PracticeConfigModal = lazy(() => import('./components/PracticeConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
 
 const ScreenFallback = ({ className = 'h-full flex items-center justify-center p-4' }: { className?: string }) => (
@@ -53,7 +53,11 @@ export default function App() {
     // Remount the study screen for every new session
     const [studySessionKey, setStudySessionKey] = useState(0);
 
-    const openStudy = (queue: Flashcard[]) => {
+    // Free practice: any set of cards, nothing is saved
+    const [practiceMode, setPracticeMode] = useState(false);
+
+    const openStudy = (queue: Flashcard[], practice = false) => {
+        setPracticeMode(practice);
         setStudyQueue(queue);
         setStudySessionKey(k => k + 1);
         setView(ViewState.Study);
@@ -76,11 +80,13 @@ export default function App() {
     const handleStartStudy = (mode: 'srs' | 'frequency', filters: Set<string>) => {
         if (mode === 'srs') return startPlanSession();
         startFilteredStudy(mode, filters);
+        setPracticeMode(false);
         setStudySessionKey(k => k + 1);
     };
 
     const handleStudySingleCard = (id: string) => {
         studySingleCardRaw(id);
+        setPracticeMode(false);
         setStudySessionKey(k => k + 1);
     };
 
@@ -186,6 +192,7 @@ export default function App() {
                             getMoreCards={plan.getQueue}
                             getExtraCards={plan.getExtraQueue}
                             level={plan.settings.level}
+                            practice={practiceMode}
                             userId={session?.user.id}
                         />
                     </Suspense>
@@ -280,7 +287,12 @@ export default function App() {
 
             {showStudyConfig && (
                 <Suspense fallback={<ScreenFallback className="fixed inset-0 z-[60] flex items-center justify-center" />}>
-                    <StudyConfigModal onClose={() => setShowStudyConfig(false)} onStart={handleStartStudy} />
+                    <PracticeConfigModal
+                        cards={cards}
+                        folders={folders}
+                        onClose={() => setShowStudyConfig(false)}
+                        onStart={(selected) => { setShowStudyConfig(false); openStudy(selected, true); }}
+                    />
                 </Suspense>
             )}
 
