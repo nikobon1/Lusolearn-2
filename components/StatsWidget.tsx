@@ -33,15 +33,40 @@ const WEEKDAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const daysWord = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'дня' : 'дней');
 
-const Section: React.FC<{ title: string; children: React.ReactNode; aside?: React.ReactNode }> = ({ title, children, aside }) => (
-    <section className="border-t border-slate-100 pt-4 dark:border-slate-700">
-        <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">{title}</h4>
-            {aside}
-        </div>
-        {children}
-    </section>
+/** "?" next to a title: tap to show what the number means and how it's counted. */
+const InfoToggle: React.FC<{ open: boolean; onClick: () => void; label: string }> = ({ open, onClick, label }) => (
+    <button
+        onClick={onClick}
+        aria-expanded={open}
+        aria-label={`Что это: ${label}`}
+        className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border text-[11px] font-bold transition-colors ${open ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600'}`}
+    >
+        ?
+    </button>
 );
+
+const InfoText: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="mb-3 space-y-1.5 rounded-xl bg-slate-50 px-3 py-2.5 text-sm leading-snug text-slate-600 animate-in fade-in duration-200 dark:bg-slate-700/50 dark:text-slate-300">
+        {children}
+    </div>
+);
+
+const Section: React.FC<{ title: string; children: React.ReactNode; aside?: React.ReactNode; info?: React.ReactNode }> = ({ title, children, aside, info }) => {
+    const [showInfo, setShowInfo] = useState(false);
+    return (
+        <section className="border-t border-slate-100 pt-4 dark:border-slate-700">
+            <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">{title}</h4>
+                    {info && <InfoToggle open={showInfo} onClick={() => setShowInfo(v => !v)} label={title} />}
+                </div>
+                {aside}
+            </div>
+            {info && showInfo && <InfoText>{info}</InfoText>}
+            {children}
+        </section>
+    );
+};
 
 const StatsWidget: React.FC<StatsWidgetProps> = ({
     cards: allCards, user, records, practice, markedKnown, settings, onChangeSettings, onShowCards, onPracticeCards, onAddWords,
@@ -54,6 +79,7 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
         return !v;
     });
     const [dictionary, setDictionary] = useState<FrequencyEntry[] | null>(null);
+    const [coverageInfo, setCoverageInfo] = useState(false);
     useEffect(() => { loadFrequencyDictionary().then(setDictionary).catch(() => setDictionary([])); }, []);
 
     const cards = useMemo(() => allCards.filter(c => !isPaused(c)), [allCards]);
@@ -116,8 +142,18 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
             {/* 1. Coverage */}
             {coverage && (
                 <div>
-                    <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">{pct(coverage.known)}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">{pct(coverage.known)}</p>
+                        <InfoToggle open={coverageInfo} onClick={() => setCoverageInfo(v => !v)} label="доля речи" />
+                    </div>
                     <p className="text-sm text-slate-600 dark:text-slate-300">обычной речи — слова, которые вы уже знаете</p>
+                    {coverageInfo && (
+                        <div className="mt-2"><InfoText>
+                            <p>Какая часть слов в обычном разговоре — ваши. Посчитано по частотному словарю живой речи: «de», «que», «não» встречаются тысячи раз, «rinoceronte» — почти никогда, поэтому частые слова весят намного больше.</p>
+                            <p><b>Зелёная часть</b> — слова, которые вы знаете: интервал повторения от недели или отмечены «Знаю» в «С нуля». <b>Жёлтая</b> — слова, которые ещё учите.</p>
+                            <p>Для ориентира: 100 самых частых слов дают около 60% речи, 500 — около 78%, весь словарь «С нуля» (~1650 слов) — около 86%. Поэтому быстрее всего процент растёт от первых слов, и «С нуля» идёт по частоте. Для свободного понимания нужно знать 95% слов и больше — остальное добирается из своих тем и видео.</p>
+                        </InfoText></div>
+                    )}
                     <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                         <div className="absolute inset-y-0 left-0 rounded-full bg-amber-300/70" style={{ width: pct(coverage.withLearning) }} />
                         <div className="absolute inset-y-0 left-0 rounded-full bg-emerald-500" style={{ width: pct(coverage.known) }} />
@@ -133,7 +169,11 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
             )}
 
             {/* 2. Stages */}
-            <Section title="Ваши слова">
+            <Section title="Ваши слова" info={<>
+                <p>Все карточки (кроме слов на паузе) по тому, насколько прочно слово уже сидит в памяти. Стадия зависит от интервала — через сколько дней слово покажется снова.</p>
+                <p><b>Новые</b> — ещё не изучали. <b>Учу</b> — интервал меньше недели, слово легко забыть. <b>Знаю</b> — 1–3 недели. <b>Закреплено</b> — больше 3 недель: такое слово, скорее всего, останется надолго.</p>
+                <p>Нажмите на стадию, чтобы увидеть её слова. Если ошибиться в повторении, слово вернётся в «Учу» — это нормально.</p>
+            </>}>
                 <div className="flex h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                     {(Object.keys(STAGE_LABELS) as Stage[]).map(s => stages[s] > 0 && (
                         <div key={s} className={STAGE_COLORS[s]} style={{ width: `${(stages[s] / totalCards) * 100}%` }} />
@@ -152,7 +192,11 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
             </Section>
 
             {/* 3. Regularity */}
-            <Section title="Регулярность" aside={<span className="text-xs text-slate-400">{activeDays28} из 28 дней</span>}>
+            <Section title="Регулярность" info={<>
+                <p>Каждая клетка — один день, колонки — недели (сверху понедельник). Чем темнее клетка, тем больше было ответов: повторения, фразы и глаголы вместе.</p>
+                <p><b>Серия</b> — сколько дней подряд вы занимались. Сегодняшний день засчитается после первого ответа, а серия не сгорит до конца дня.</p>
+                <p>Для памяти 10 минут каждый день полезнее, чем час раз в неделю: повторения приходят точно в срок и не копятся.</p>
+            </>} aside={<span className="text-xs text-slate-400">{activeDays28} из 28 дней</span>}>
                 <p className="mb-2 text-sm text-slate-700 dark:text-slate-200">
                     {streak > 0 ? <>🔥 <b>{streak} {daysWord(streak)}</b> подряд</> : 'Серия начнётся с сегодняшнего занятия'}
                 </p>
@@ -171,7 +215,11 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
             </Section>
 
             {/* 4. Accuracy */}
-            <Section title="Точность вспоминания" aside={<span className="text-xs text-slate-400">за 2 недели</span>}>
+            <Section title="Точность вспоминания" info={<>
+                <p>Какую долю уже знакомых слов вы вспомнили с первой попытки за последние 2 недели («Вспомнил», «С трудом» или «Легко», а не «Не вспомнил»). Новые слова и повторные показы после ошибки не считаются.</p>
+                <p><b>Норма — 85–90%.</b> Ниже 80% — новых слов слишком много, повторения не успевают закрепиться: лучше снизить темп. Выше 95% — слова даются легко, можно брать больше новых.</p>
+                <p>Оценивайте себя честно: от оценки зависит, когда слово вернётся, и точность тоже.</p>
+            </>} aside={<span className="text-xs text-slate-400">за 2 недели</span>}>
                 {accuracy.total < 20 ? (
                     <p className="text-sm text-slate-500 dark:text-slate-400">Нужно хотя бы 20 повторений, чтобы оценить. Пока: {accuracy.total}.</p>
                 ) : (
@@ -195,7 +243,10 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
             </Section>
 
             {/* 5. Forecast */}
-            <Section title="Повторения на неделю" aside={<span className="text-xs text-slate-400">лимит {settings.reviewsPerDay}/день</span>}>
+            <Section title="Повторения на неделю" info={<>
+                <p>Сколько уже изученных слов придёт на повторение в каждый из ближайших 7 дней. «Сег» включает всё, что накопилось раньше. Новые слова сюда не входят — они добавляются по дневному лимиту.</p>
+                <p><b>Красный столбик</b> — день, когда повторений больше вашего лимита. Лишнее перенесётся на следующие дни, а новые слова при большом завале встанут на паузу. Если таких дней много — уменьшите число новых слов или поднимите лимит повторений (⚙️ в «Занятии на сегодня»).</p>
+            </>} aside={<span className="text-xs text-slate-400">лимит {settings.reviewsPerDay}/день</span>}>
                 <div className="flex h-20 items-end gap-1.5">
                     {forecast.map((f, i) => (
                         <div key={i} className="flex flex-1 flex-col items-center gap-1">
@@ -211,7 +262,10 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
             </Section>
 
             {/* 6. Hard words */}
-            <Section title="Трудные слова" aside={hard.length > 0 ? (
+            <Section title="Трудные слова" info={<>
+                <p>Слова, которые вы чаще всего забывали за последние 2 месяца (нажимали «Не вспомнил» хотя бы дважды).</p>
+                <p><b>«Потренировать»</b> — прогнать их сейчас вне плана: расписание повторений не меняется. Если слово упорно не запоминается, помогает свой пример: добавьте его через «Создать» вместе с фразой из жизни, или поставьте слово на паузу, если оно вам пока не нужно.</p>
+            </>} aside={hard.length > 0 ? (
                 <button onClick={() => onPracticeCards(hard.map(h => h.card))} className="text-xs font-bold text-emerald-700 hover:underline dark:text-emerald-400">Потренировать →</button>
             ) : undefined}>
                 {hard.length === 0 ? (
@@ -230,7 +284,10 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
 
             {/* 7. Phrases & verbs */}
             {(scores.phrases.length > 0 || scores.verbs.length > 0) && (
-                <Section title="Фразы и глаголы" aside={<span className="text-xs text-slate-400">за 30 дней</span>}>
+                <Section title="Фразы и глаголы" info={<>
+                    <p>Доля правильных ответов за 30 дней во «Фразах-шаблонах» (💬 по ситуациям) и в «Тренажёре спряжений» (🔤 по временам). Показаны темы, где было хотя бы 3 ответа; сверху — самые слабые.</p>
+                    <p>Красный — меньше 60%: стоит повторить правило или шаблоны этой ситуации. Жёлтый — 60–85%, зелёный — уверенно.</p>
+                </>} aside={<span className="text-xs text-slate-400">за 30 дней</span>}>
                     <div className="space-y-1.5">
                         {[...scores.phrases.map(s => ({ ...s, icon: '💬' })), ...scores.verbs.map(s => ({ ...s, icon: '🔤' }))].map(s => (
                             <div key={s.icon + s.label} className="flex items-center gap-2 text-sm">
