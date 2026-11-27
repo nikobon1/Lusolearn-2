@@ -23,7 +23,7 @@ import {
     FolderIcon, EditIcon, SunIcon, MoonIcon,
     LoaderIcon, SparklesIcon, ClockIcon,
     SortAlphaIcon, ChartIcon, BookIcon, BrainIcon, GridIcon,
-    PlusIcon, SearchIcon, ShuffleIcon, XIcon
+    PlusIcon, SearchIcon, ShuffleIcon, XIcon, MicIcon
 } from './Icons';
 
 interface DashboardProps {
@@ -53,7 +53,7 @@ interface DashboardProps {
     toggleTheme: () => void;
 }
 
-type StudyModeId = 'practice' | 'conjugation' | 'phrases' | 'story';
+type StudyModeId = 'practice' | 'conjugation' | 'phrases' | 'dialogue' | 'story';
 
 interface StudyMode {
     id: StudyModeId;
@@ -86,6 +86,13 @@ const STUDY_MODES: StudyMode[] = [
         icon: BookIcon,
         tone: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/30',
         iconTone: 'bg-white dark:bg-emerald-900/50 shadow-sm',
+    },
+    {
+        id: 'dialogue', title: 'Диалоги', subtitle: 'Поговорить с ИИ в бытовой сцене',
+        details: 'ИИ играет продавца на рынке, фармацевта, соседку Ana, сотрудника Finanças… В каждой сцене есть цели («заказать кофе», «спросить цену»). Отвечайте голосом или текстом — под каждой вашей фразой появится поправка, если что-то можно сказать правильнее. Застряли — «Подсказка». В конце исправленные фразы можно добавить в карточки.',
+        icon: MicIcon,
+        tone: 'bg-violet-50 dark:bg-violet-900/20 text-violet-800 dark:text-violet-200 border-violet-100 dark:border-violet-800/30 hover:bg-violet-100 dark:hover:bg-violet-900/30',
+        iconTone: 'bg-white dark:bg-violet-900/50 shadow-sm',
     },
     {
         id: 'story', title: 'История', subtitle: 'Сериал из ваших слов: читать, слушать, отвечать',
@@ -472,6 +479,7 @@ const DashboardView: React.FC<DashboardProps> = ({
                                         if (mode.id === 'practice') onShowStudyConfig();
                                         else if (mode.id === 'conjugation') setView(ViewState.Conjugation);
                                         else if (mode.id === 'phrases') setView(ViewState.Phrases);
+                                        else if (mode.id === 'dialogue') setView(ViewState.Dialogues);
                                         else setView(ViewState.StoryList);
                                     }}
                                 />
