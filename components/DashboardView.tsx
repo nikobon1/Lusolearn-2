@@ -12,6 +12,7 @@ import { simpleHash } from '../lib/hash';
 import { notifyError, notifyInfo, notifySuccess } from '../lib/notifications';
 import { createFolderRecord, deleteFolderRecord } from '../services/repositories/foldersRepository';
 import { isPaused } from '../domain/paused';
+import { firstName, getGreeting } from '../domain/greeting';
 import { deleteFlashcardsByIds, updateFlashcardFolders } from '../services/repositories/flashcardsRepository';
 import StatsWidget from './StatsWidget';
 import {
@@ -125,6 +126,15 @@ const DashboardView: React.FC<DashboardProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'due' | 'new' | 'learned'>('all');
     const [openModeInfo, setOpenModeInfo] = useState<string | null>(null);
+    // Greeting follows the time of day (re-checked every minute while the app is open)
+    const [greeting, setGreeting] = useState(() => getGreeting());
+    useEffect(() => {
+        const timer = setInterval(() => setGreeting(getGreeting()), 60_000);
+        return () => clearInterval(timer);
+    }, []);
+    const name = session && session.user.email !== 'offline@demo.com'
+        ? firstName(session.user.user_metadata?.full_name || session.user.user_metadata?.name)
+        : '';
     const [cardSortMode, setCardSortMode] = useState<'newest' | 'oldest' | 'alpha' | 'due'>('newest');
     const [isShuffled, setIsShuffled] = useState(false);
     const [shuffleSeed, setShuffleSeed] = useState(0);
@@ -410,8 +420,11 @@ const DashboardView: React.FC<DashboardProps> = ({
             <div className="max-w-7xl mx-auto">
                 <header className="mb-8 flex items-end justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-800 dark:text-white serif mb-1">Привет, Студент</h1>
-                        <p className="text-slate-500 dark:text-slate-400">Готовы учить португальский?</p>
+                        <h1 className="text-3xl font-bold text-slate-800 dark:text-white serif mb-1" title={greeting.ru}>
+                            {greeting.pt}{name ? `, ${name}` : ''}!
+                        </h1>
+                        <p className="text-slate-600 dark:text-slate-300">{greeting.subtitlePt}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{greeting.ru}{name ? `, ${name}` : ''}! {greeting.subtitleRu}</p>
                     </div>
                     <div className="md:hidden flex gap-2">
                         <button onClick={toggleTheme} className="p-2 bg-white dark:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shadow-sm">
