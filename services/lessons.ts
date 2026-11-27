@@ -2,6 +2,7 @@ import { Type } from './geminiSchema';
 import { generateContent, callWithRetry } from './client';
 import { LessonAnalysis, LessonItem } from '../types';
 import { TranscriptLine, numberedForPrompt } from '../domain/transcript';
+import { MODELS, thinkingFor } from '../shared/models';
 
 const MAX_ITEMS = 20;
 
@@ -57,9 +58,9 @@ TRANSCRIPT:
 ${text}`;
 
     const response = await callWithRetry(() => generateContent({
-        model: 'gemini-2.5-flash',
+        model: MODELS.text,
         contents: { parts: [{ text: prompt }] },
-        config: { responseMimeType: 'application/json', responseSchema: schema },
+        config: { responseMimeType: 'application/json', responseSchema: schema, ...thinkingFor(MODELS.text) },
     }));
     if (!response.text) throw new Error('Empty lesson analysis');
 

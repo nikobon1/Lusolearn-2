@@ -1,6 +1,7 @@
 import { Type } from "./geminiSchema";
 import { generateContent, callWithRetry } from "./client";
 import { Flashcard, Folder } from "../types";
+import { MODELS, thinkingFor } from '../shared/models';
 
 export interface SmartSortSuggestion {
     action: 'move' | 'create';
@@ -32,9 +33,9 @@ export const suggestSmartSorting = async (cards: Flashcard[], folders: Folder[])
     const prompt = `Sort these cards into folders. Create new folders (in Russian) if needed for clusters > 1 card.`;
 
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.textLite,
         contents: { parts: [{ text: `${prompt}\nFolders: ${JSON.stringify(folderSimplified)}\nCards: ${JSON.stringify(cardSimplified)}` }] } as any,
-        config: { responseMimeType: "application/json", responseSchema: schema }
+        config: { responseMimeType: "application/json", responseSchema: schema, ...thinkingFor(MODELS.textLite) }
     }));
 
     const text = response.text;

@@ -1,10 +1,11 @@
+import { MODELS, thinkingFor } from './models.js';
 /**
  * Request spec for generating a study card's details with Gemini.
  * Shared by the browser (services/vocabulary.ts) and the /api/word server function,
  * so cards are generated the same way everywhere.
  */
 
-export const CARD_DETAILS_MODEL = 'gemini-2.5-flash';
+export const CARD_DETAILS_MODEL = MODELS.text;
 
 export const buildCardDetailsRequest = (word: string, meaning?: string) => {
     const verbFormsSchema = {
@@ -107,6 +108,7 @@ export const buildCardDetailsRequest = (word: string, meaning?: string) => {
             systemInstruction,
             responseMimeType: 'application/json',
             responseSchema: detailSchema,
+            ...thinkingFor(CARD_DETAILS_MODEL),
         },
     };
 };

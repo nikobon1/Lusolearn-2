@@ -1,3 +1,4 @@
+import { MODELS } from '../shared/models';
 type EnvMap = Record<string, string | undefined>;
 
 const processEnv: EnvMap = (typeof process !== 'undefined' ? (process.env as EnvMap) : {});
@@ -18,6 +19,6 @@ const configuredSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || read
 export const env = {
     supabaseUrl: configuredSupabaseUrl || defaultSupabaseUrl,
     supabaseAnonKey: configuredSupabaseAnonKey || defaultSupabaseAnonKey,
-    geminiTtsModel: import.meta.env.VITE_GEMINI_TTS_MODEL || readProcessEnv('GEMINI_TTS_MODEL') || 'gemini-2.5-flash-preview-tts',
+    geminiTtsModel: import.meta.env.VITE_GEMINI_TTS_MODEL || readProcessEnv('GEMINI_TTS_MODEL') || MODELS.tts,
     usingFallbackSupabase: !configuredSupabaseUrl || !configuredSupabaseAnonKey,
 };
