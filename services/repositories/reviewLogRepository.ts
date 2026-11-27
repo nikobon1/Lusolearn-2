@@ -46,3 +46,13 @@ export const fetchStudyPlanSettings = (userId: string) =>
 
 export const saveStudyPlanSettings = (userId: string, settings: PlanSettings) =>
     supabase.from('profiles').update({ study_plan: settings }).eq('id', userId);
+
+/** Review history for statistics: newest first, since the given moment. */
+export const fetchReviewHistory = (userId: string, since: Date) =>
+    supabase
+        .from('review_logs')
+        .select('card_id, was_new, attempt, rating, interval_after, reviewed_at')
+        .eq('user_id', userId)
+        .gte('reviewed_at', since.toISOString())
+        .order('reviewed_at', { ascending: false })
+        .limit(10000);

@@ -4,6 +4,9 @@ import DuplicatesBanner from './DuplicatesBanner';
 import DailyPlanWidget from './DailyPlanWidget';
 import type { RouteStep } from '../domain/todayRoute';
 import StartChooser, { StartChoice } from './StartChooser';
+import type { ReviewRecord } from '../domain/stats';
+import type { PracticeEntry } from '../domain/practiceLog';
+import { useFrequencyProgress } from '../hooks/useFrequencyProgress';
 import { PlanSettings, PlanSummary } from '../domain/dailyPlan';
 import { Session } from '@supabase/supabase-js';
 import { Flashcard, UserProfile, Folder, ViewState } from '../types';
@@ -42,6 +45,10 @@ interface DashboardProps {
     routeSteps: RouteStep[];
     onRouteStep: (step: RouteStep) => void;
     onStartChoice: (choice: StartChoice) => void;
+    reviewRecords: ReviewRecord[];
+    practiceEntries: PracticeEntry[];
+    onShowCards: (title: string, cards: Flashcard[]) => void;
+    onPracticeCards: (cards: Flashcard[]) => void;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
 }
@@ -118,7 +125,7 @@ const StudyModeButton: React.FC<{ mode: StudyMode; open: boolean; onToggleInfo: 
 const DashboardView: React.FC<DashboardProps> = ({
     session, user, cards, setCards, folders, setFolders,
     setView, onStartStudy, onShowStudyConfig, onOpenList, onStudySingleCard,
-    planSummary, planSettings, onChangePlanSettings, onStartPlan, routeSteps, onRouteStep, onStartChoice,
+    planSummary, planSettings, onChangePlanSettings, onStartPlan, routeSteps, onRouteStep, onStartChoice, reviewRecords, practiceEntries, onShowCards, onPracticeCards,
     theme, toggleTheme
 }) => {
     // Local State for Dashboard UI
@@ -128,6 +135,7 @@ const DashboardView: React.FC<DashboardProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'due' | 'new' | 'learned'>('all');
     const [openModeInfo, setOpenModeInfo] = useState<string | null>(null);
+    const frequencyProgress = useFrequencyProgress(session?.user.id);
     // Greeting follows the time of day (re-checked every minute while the app is open)
     const [greeting, setGreeting] = useState(() => getGreeting());
     useEffect(() => {
@@ -448,7 +456,9 @@ const DashboardView: React.FC<DashboardProps> = ({
                         )}
                         <DailyPlanWidget summary={planSummary} settings={planSettings} onChangeSettings={onChangePlanSettings} onStart={onStartPlan}
                             steps={routeSteps} onStep={onRouteStep} onMorePhrases={() => { const p = routeSteps.find(s => s.id === 'phrases'); if (p) onRouteStep(p); }} />
-                        <StatsWidget cards={cards} user={user} onOpenList={(type) => onOpenList({ title: type === 'learned' ? 'Выучено' : 'На изучении', filter: type })} />
+                        <StatsWidget cards={cards} user={user} records={reviewRecords} practice={practiceEntries} markedKnown={frequencyProgress.knownKeys}
+                            settings={planSettings} onChangeSettings={onChangePlanSettings} onShowCards={onShowCards} onPracticeCards={onPracticeCards}
+                            onAddWords={() => setView(ViewState.Frequency)} />
 
                         {/* Study Actions */}
                         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-3">

@@ -6,7 +6,7 @@ import { normalizeFrequency } from '../domain/frequency';
 export const useStudyState = (cards: Flashcard[], setView: (v: ViewState) => void) => {
     const [studyQueue, setStudyQueue] = useState<Flashcard[]>([]);
     const [showStudyConfig, setShowStudyConfig] = useState(false);
-    const [listModalConfig, setListModalConfig] = useState<{ title: string; filter: 'learned' | 'learning' } | null>(null);
+    const [listModalConfig, setListModalConfig] = useState<{ title: string; filter: 'learned' | 'learning'; cardIds?: string[] } | null>(null);
     const [specificStudyCardId, setSpecificStudyCardId] = useState<string | null>(null);
 
     const handleStartStudy = (mode: 'srs' | 'frequency', filters: Set<string>) => {
