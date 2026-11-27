@@ -29,6 +29,8 @@ export interface PlanSettings {
     reviewsPerDay: number;
     /** Learner's level: gap-fill exercises use example sentences up to this level */
     level: CefrLevel;
+    /** The first-run walkthrough was completed or skipped (synced, so it isn't shown again on another device) */
+    onboarded?: boolean;
 }
 
 export const DEFAULT_PLAN_SETTINGS: PlanSettings = { newPerDay: 10, reviewsPerDay: 60, level: 'A1' };
