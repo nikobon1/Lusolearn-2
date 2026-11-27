@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import DuplicatesBanner from './DuplicatesBanner';
 import DailyPlanWidget from './DailyPlanWidget';
 import type { RouteStep } from '../domain/todayRoute';
+import StartChooser, { StartChoice } from './StartChooser';
 import { PlanSettings, PlanSummary } from '../domain/dailyPlan';
 import { Session } from '@supabase/supabase-js';
 import { Flashcard, UserProfile, Folder, ViewState } from '../types';
@@ -40,6 +41,7 @@ interface DashboardProps {
     onStartPlan: () => void;
     routeSteps: RouteStep[];
     onRouteStep: (step: RouteStep) => void;
+    onStartChoice: (choice: StartChoice) => void;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
 }
@@ -116,7 +118,7 @@ const StudyModeButton: React.FC<{ mode: StudyMode; open: boolean; onToggleInfo: 
 const DashboardView: React.FC<DashboardProps> = ({
     session, user, cards, setCards, folders, setFolders,
     setView, onStartStudy, onShowStudyConfig, onOpenList, onStudySingleCard,
-    planSummary, planSettings, onChangePlanSettings, onStartPlan, routeSteps, onRouteStep,
+    planSummary, planSettings, onChangePlanSettings, onStartPlan, routeSteps, onRouteStep, onStartChoice,
     theme, toggleTheme
 }) => {
     // Local State for Dashboard UI
@@ -437,6 +439,13 @@ const DashboardView: React.FC<DashboardProps> = ({
                     {/* Left Column: Stats & Actions */}
                     <div className="lg:col-span-4 space-y-6">
                         <DuplicatesBanner cards={cards} setCards={setCards} session={session} />
+                        {cards.length === 0 && (
+                            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                <h3 className="mb-1 font-bold text-slate-800 dark:text-white">С чего начнём?</h3>
+                                <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">У вас пока нет карточек. Выберите, как начать:</p>
+                                <StartChooser onPick={onStartChoice} />
+                            </div>
+                        )}
                         <DailyPlanWidget summary={planSummary} settings={planSettings} onChangeSettings={onChangePlanSettings} onStart={onStartPlan}
                             steps={routeSteps} onStep={onRouteStep} onMorePhrases={() => { const p = routeSteps.find(s => s.id === 'phrases'); if (p) onRouteStep(p); }} />
                         <StatsWidget cards={cards} user={user} onOpenList={(type) => onOpenList({ title: type === 'learned' ? 'Выучено' : 'На изучении', filter: type })} />

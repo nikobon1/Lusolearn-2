@@ -15,7 +15,8 @@ import { usePracticeLog } from './hooks/usePracticeLog';
 import { CONJUGATIONS_PER_DAY, PHRASES_PER_DAY, RouteStep, buildTodayRoute } from './domain/todayRoute';
 import { answeredOn, dayKey } from './domain/practiceLog';
 import type { Situation } from './domain/phraseTemplates';
-import { Topic, loadFrequencyDictionary, normalizeTerm } from './domain/frequencyDictionary';
+import { BatchFocus, Topic, loadFrequencyDictionary, normalizeTerm } from './domain/frequencyDictionary';
+import type { StartChoice } from './components/StartChooser';
 import { updateFlashcardTags } from './services/repositories/flashcardsRepository';
 import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
@@ -32,6 +33,7 @@ const LessonsView = lazy(() => import('./components/LessonsView'));
 const ConjugationTrainer = lazy(() => import('./components/ConjugationTrainer'));
 const PhrasesView = lazy(() => import('./components/PhrasesView'));
 const Onboarding = lazy(() => import('./components/Onboarding'));
+const PlacementTest = lazy(() => import('./components/PlacementTest'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const PracticeConfigModal = lazy(() => import('./components/PracticeConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -85,9 +87,11 @@ export default function App() {
             .catch(() => { /* phrases fall back to the least practised situation */ });
     }, []);
     const routeSteps = useMemo(() => {
+        // Words learned or added today decide the phrase situation (e.g. «Кафе» after food words)
         const todayNew = new Set(plan.todayNewIds);
+        const startOfDay = new Date().setHours(0, 0, 0, 0);
         const todayTopics = cards
-            .filter(c => todayNew.has(c.id))
+            .filter(c => todayNew.has(c.id) || c.createdAt >= startOfDay)
             .map(c => topicByTerm.get(normalizeTerm(c.originalTerm)))
             .filter((t): t is Topic => !!t);
         const hasVerbs = studyableCards.some(c => c.conjugation?.isVerb || c.tags?.includes('глагол'));
@@ -104,10 +108,21 @@ export default function App() {
         setOnboardingChecked(true);
         if (!plan.settings.onboarded && cards.length === 0) setShowOnboarding(true);
     }, [loading, onboardingChecked, accountKey, loadedFor, plan.settings.onboarded, cards.length]);
-    const finishOnboarding = (goTo: 'frequency' | 'dashboard') => {
+    // «С чего начнём?»: four ways in for a new learner
+    const [frequencyFocus, setFrequencyFocus] = useState<{ focus: BatchFocus; key: number } | null>(null);
+    const [showPlacement, setShowPlacement] = useState(false);
+    const startWith = (choice: StartChoice) => {
+        if (choice.kind === 'basics') { setFrequencyFocus({ focus: 'all', key: Date.now() }); setView(ViewState.Frequency); }
+        else if (choice.kind === 'situation') { setFrequencyFocus({ focus: choice.topic, key: Date.now() }); setView(ViewState.Frequency); }
+        else if (choice.kind === 'placement') setShowPlacement(true);
+        else if (choice.kind === 'create') setView(ViewState.Create);
+        else setView(ViewState.Lessons);
+    };
+    const finishOnboarding = (goTo: 'dashboard' | StartChoice) => {
         setShowOnboarding(false);
         if (!plan.settings.onboarded) plan.setSettings({ onboarded: true });
-        setView(goTo === 'frequency' ? ViewState.Frequency : ViewState.Dashboard);
+        if (goTo === 'dashboard') setView(ViewState.Dashboard);
+        else startWith(goTo);
     };
 
     /** A short drill launched from the route; cleared when the learner goes elsewhere. */
@@ -281,7 +296,7 @@ export default function App() {
                     setView={setView} onStartStudy={handleStartStudy} onShowStudyConfig={() => setShowStudyConfig(true)}
                     onOpenList={setListModalConfig} onStudySingleCard={handleStudySingleCard} theme={theme} toggleTheme={toggleTheme}
                     planSummary={plan.summary} planSettings={plan.settings} onChangePlanSettings={plan.setSettings} onStartPlan={startPlanSession}
-                    routeSteps={routeSteps} onRouteStep={handleRouteStep}
+                    routeSteps={routeSteps} onRouteStep={handleRouteStep} onStartChoice={startWith}
                 />
             )}
 
@@ -323,6 +338,8 @@ export default function App() {
             {view === ViewState.Frequency && (
                 <Suspense fallback={<ScreenFallback />}>
                     <FrequencyPathView
+                        key={frequencyFocus?.key ?? 'path'}
+                        initialFocus={frequencyFocus?.focus}
                         cards={cards}
                         userId={session?.user.id}
                         onCardsCreated={addCards}
@@ -397,6 +414,15 @@ export default function App() {
             )}
 
             {/* MODALS */}
+            {showPlacement && (
+                <Suspense fallback={null}>
+                    <PlacementTest
+                        userId={session?.user.id}
+                        onClose={() => setShowPlacement(false)}
+                        onDone={() => { setShowPlacement(false); setFrequencyFocus({ focus: 'all', key: Date.now() }); setView(ViewState.Frequency); }}
+                    />
+                </Suspense>
+            )}
             {showOnboarding && (
                 <Suspense fallback={null}>
                     <Onboarding settings={plan.settings} hasCards={cards.length > 0} onChangeSettings={plan.setSettings} onFinish={finishOnboarding} />
