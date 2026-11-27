@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserProfile, ViewState } from '../types';
 import {
     HomeIcon, PlusIcon, BookIcon, TrophyIcon,
@@ -22,6 +22,19 @@ const Layout: React.FC<LayoutProps> = ({
     children, view, setView, user, theme, toggleTheme, onLogout, onOpenStudy, dueCount, onShowHelp
 }) => {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    // Typing on a phone: the keyboard takes half the screen — hide the bottom bar to keep the task visible
+    const [typing, setTyping] = useState(false);
+    useEffect(() => {
+        const isField = (el: EventTarget | null) =>
+            el instanceof HTMLElement && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'range', 'button', 'submit'].includes((el as HTMLInputElement).type)));
+        const onIn = (e: FocusEvent) => { if (isField(e.target)) setTyping(true); };
+        const onOut = (e: FocusEvent) => { if (isField(e.target)) setTyping(false); };
+        document.addEventListener('focusin', onIn);
+        document.addEventListener('focusout', onOut);
+        return () => { document.removeEventListener('focusin', onIn); document.removeEventListener('focusout', onOut); };
+    }, []);
+    // During a study session the card has its own Home button — the bottom bar only takes space
+    const hideBottomBar = typing || view === ViewState.Study;
 
     const handleViewChange = (nextView: ViewState) => {
         setShowMobileMenu(false);
@@ -44,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-900 transition-colors dark:bg-slate-900 dark:text-white">
+        <div className="flex h-[100dvh] overflow-hidden bg-slate-50 font-sans text-slate-900 transition-colors dark:bg-slate-900 dark:text-white">
             <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 md:flex">
                 <div className="flex items-center gap-3 p-6">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30">
@@ -108,10 +121,10 @@ const Layout: React.FC<LayoutProps> = ({
                 </div>
             </aside>
 
-            <main className="relative flex flex-1 flex-col overflow-hidden pb-24 md:pb-0">
+            <main className={`relative flex flex-1 flex-col overflow-hidden md:pb-0 ${hideBottomBar ? 'pb-0' : 'pb-24'}`}>
                 {children}
 
-                <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 md:hidden">
+                <nav className={`fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 md:hidden ${hideBottomBar ? 'hidden' : ''}`}>
                     <div className="mx-auto grid max-w-md grid-cols-5 items-end rounded-[28px] border border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
                         <button onClick={() => handleViewChange(ViewState.Dashboard)} className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-colors ${view === ViewState.Dashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
                             <HomeIcon className="h-5 w-5" />
