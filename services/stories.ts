@@ -3,6 +3,7 @@ import { SERIES_BIBLE, SERIES_NAME } from "../domain/gradedStory";
 import type { CefrLevel } from "../domain/reviewExercise";
 import { Type } from "./geminiSchema";
 import { generateContent, callWithRetry } from "./client";
+import { MODELS, thinkingFor } from '../shared/models';
 
 export const generateStoryFromWords = async (words: string[]): Promise<{ pt: string, ru: string, audioBase64?: string }> => {
     const schema = {
@@ -20,9 +21,9 @@ export const generateStoryFromWords = async (words: string[]): Promise<{ pt: str
     `;
 
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.text,
         contents: { parts: [{ text: prompt }] } as any,
-        config: { responseMimeType: "application/json", responseSchema: schema }
+        config: { responseMimeType: "application/json", responseSchema: schema, ...thinkingFor(MODELS.text) }
     }));
 
     const text = response.text;
@@ -100,9 +101,9 @@ Return JSON:
 `;
 
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.text,
         contents: { parts: [{ text: prompt }] } as any,
-        config: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.8 },
+        config: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.8, ...thinkingFor(MODELS.text) },
     }));
     if (!response.text) throw new Error("Failed to generate story");
     const parsed = JSON.parse(response.text);
@@ -125,9 +126,9 @@ Return JSON: ok = true if the answer makes sense for the question and is underst
 feedback = 1-2 short sentences in Russian: praise or what to fix (grammar/word choice), friendly. Address the learner as "вы" and avoid gendered verb forms (write "получилось", "ответ верный", not "ты построил/построила");
 corrected = the answer rewritten in correct, natural European Portuguese (keep the learner's meaning).`;
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.text,
         contents: { parts: [{ text: prompt }] } as any,
-        config: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.2 },
+        config: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.2, ...thinkingFor(MODELS.text) },
     }));
     if (!response.text) throw new Error("Failed to check answer");
     return JSON.parse(response.text);

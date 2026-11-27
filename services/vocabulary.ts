@@ -2,6 +2,7 @@ import { Type } from "./geminiSchema";
 import { generateContent, callWithRetry } from "./client";
 import { VocabularyItem, AICardDetails, Example } from "../types";
 import { buildCardDetailsRequest } from "../shared/cardDetailsSpec";
+import { MODELS, thinkingFor } from '../shared/models';
 
 export interface VocabularyExtractionResult {
     items: VocabularyItem[];
@@ -23,7 +24,7 @@ export const translateExplanationToRussian = async (text: string): Promise<strin
     };
 
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.textLite,
         contents: {
             parts: [{
                 text: `Translate this grammar explanation into Russian.
@@ -35,6 +36,7 @@ Text: ${JSON.stringify(trimmed)}`
         config: {
             responseMimeType: "application/json",
             responseSchema: schema,
+            ...thinkingFor(MODELS.textLite),
         }
     }));
 
@@ -124,11 +126,12 @@ export const extractVocabulary = async (
     }
 
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.text,
         contents: contents as any,
         config: {
             responseMimeType: "application/json",
             responseSchema: extractionSchema,
+            ...thinkingFor(MODELS.text),
         }
     }));
 
@@ -180,9 +183,9 @@ export const enrichCardPatterns = async (originalTerm: string, examples: Example
     target - это португальское слово/фраза из предложения.
     explanation - объяснение грамматического правила НА РУССКОМ.`;
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.text,
         contents: { parts: [{ text: `${prompt}\n${JSON.stringify(examples)}` }] } as any,
-        config: { responseMimeType: "application/json", responseSchema: schema }
+        config: { responseMimeType: "application/json", responseSchema: schema, ...thinkingFor(MODELS.text) }
     }));
 
     const text = response.text;

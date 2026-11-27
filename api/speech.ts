@@ -1,3 +1,4 @@
+import { MODELS } from '../shared/models.js';
 type SpeechWord = {
     word: string;
     confidence: number;
@@ -24,7 +25,7 @@ type ReqBody = {
     };
 };
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = MODELS.transcribe;
 const TRANSCRIBE_PROMPT =
     'Transcribe this short recording of a learner speaking European Portuguese. ' +
     'Write exactly the words that were said, in Portuguese, without correcting mistakes, adding words or translating. ' +
@@ -42,7 +43,7 @@ const transcribeWithGemini = async (audioContent: string, mimeType: string): Pro
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: TRANSCRIBE_PROMPT }, { inlineData: { mimeType: mimeType.split(';')[0], data: audioContent } }] }],
-            generationConfig: { temperature: 0, thinkingConfig: { thinkingBudget: 0 } },
+            generationConfig: { temperature: 0, ...(/^gemini-[3-9]/.test(GEMINI_MODEL) ? { thinkingConfig: { thinkingLevel: 'low' } } : { thinkingConfig: { thinkingBudget: 0 } }) },
         }),
     });
     const payload: any = await response.json().catch(() => null);

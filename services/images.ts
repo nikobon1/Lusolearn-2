@@ -1,6 +1,7 @@
 import { generateContent, callWithRetry } from "./client";
 import { findGlobalImage, saveGlobalImage } from "./supabase";
 import { supabase } from "./supabase";
+import { MODELS } from '../shared/models';
 
 // Orchestrator for Images: Cache -> GenAI -> Save -> Return
 export const getOrGenerateImage = async (prompt: string, word: string): Promise<string> => {
@@ -30,7 +31,7 @@ export const getOrGenerateImage = async (prompt: string, word: string): Promise<
 
 export const generateImage = async (prompt: string): Promise<string> => {
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash-image",
+        model: MODELS.image,
         contents: { parts: [{ text: prompt }] },
     }));
 

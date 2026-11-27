@@ -2,6 +2,7 @@ import { Type } from "./geminiSchema";
 import { generateContent, callWithRetry } from "./client";
 import type { DialogueTurn, Scenario } from "../domain/dialogues";
 import type { CefrLevel } from "../domain/reviewExercise";
+import { MODELS, thinkingFor } from '../shared/models';
 
 export interface DialogueReply {
     check: { ok: boolean; corrected: string; correctedRu: string; note: string };
@@ -57,9 +58,9 @@ The learner's line may come from speech recognition (ignore punctuation/capitals
 - finished: true when all goals are reached and the scene naturally ends (then reply is a friendly goodbye).`;
 
     const response = await callWithRetry(() => generateContent({
-        model: "gemini-2.5-flash",
+        model: MODELS.text,
         contents: { parts: [{ text: prompt }] } as any,
-        config: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.7 },
+        config: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.7, ...thinkingFor(MODELS.text) },
     }));
     if (!response.text) throw new Error("Empty dialogue reply");
     const parsed = JSON.parse(response.text) as DialogueReply;
