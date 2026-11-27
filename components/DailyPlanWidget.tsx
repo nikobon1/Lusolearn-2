@@ -118,9 +118,13 @@ const DailyPlanWidget: React.FC<Props> = ({ summary, settings, onChangeSettings,
                     </div>
                 </div>
             ) : (
-                <button onClick={() => next && onStep(next)} className="mt-4 w-full rounded-2xl bg-emerald-600 py-3 font-bold text-white shadow-lg transition-colors hover:bg-emerald-700">
-                    {started ? 'Продолжить' : 'Начать'}: {next!.title.toLowerCase()}
-                    {minutesLeft > 0 && <span className="font-medium opacity-80"> · ещё ~{minutesLeft} мин</span>}
+                <button onClick={() => next && onStep(next)} className="mt-4 flex w-full items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-left font-bold text-white shadow-lg transition-colors hover:bg-emerald-700">
+                    <span className="min-w-0 flex-1 leading-tight">
+                        <span className="block text-[11px] font-semibold uppercase tracking-wider text-emerald-100">{started ? 'Продолжить' : 'Начать'}</span>
+                        <span className="block">{next!.title}</span>
+                    </span>
+                    {minutesLeft > 0 && <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold">~{minutesLeft} мин</span>}
+                    <span className="hidden flex-shrink-0 text-xl leading-none min-[400px]:inline">→</span>
                 </button>
             )}
             {summary.backlogBeyondLimit > 0 && !done && (
