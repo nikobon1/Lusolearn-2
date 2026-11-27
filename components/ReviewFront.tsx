@@ -23,7 +23,7 @@ interface Props {
 }
 
 const CardImage: React.FC<{ card: Flashcard; compact?: boolean }> = ({ card, compact }) => (
-    <div className={`${compact ? 'h-[32%]' : 'h-[45%]'} relative overflow-hidden bg-slate-100 dark:bg-slate-900 flex-shrink-0`}>
+    <div className={`${compact ? 'h-[32%] [@media(max-height:620px)]:hidden' : 'h-[45%]'} relative overflow-hidden bg-slate-100 dark:bg-slate-900 flex-shrink-0`}>
         {card.imageUrl ? (
             <img src={card.imageUrl} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -52,6 +52,18 @@ const AnswerBox: React.FC<{
     const speech = useSpeechRecording();
 
     useEffect(() => { inputRef.current?.focus({ preventScroll: true }); }, []);
+
+    // Keep the input visible above the on-screen keyboard (iOS overlays it; Android resizes the page)
+    const keepVisible = () => {
+        window.setTimeout(() => inputRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 300);
+    };
+    useEffect(() => {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const onResize = () => { if (document.activeElement === inputRef.current) keepVisible(); };
+        vv.addEventListener('resize', onResize);
+        return () => vv.removeEventListener('resize', onResize);
+    }, []);
 
     useEffect(() => {
         if (!speech.result) return;
@@ -82,6 +94,8 @@ const AnswerBox: React.FC<{
                     value={value}
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') submit(); }}
+                    onFocus={keepVisible}
+                    enterKeyHint="done"
                     placeholder="Ваш ответ по-португальски"
                     autoComplete="off"
                     autoCapitalize="off"
@@ -123,7 +137,7 @@ const ReviewFront: React.FC<Props> = ({ card, exercise, onReveal, onPlayWord, is
         return (
             <div className="absolute inset-0 flex flex-col bg-white dark:bg-slate-800">
                 <CardImage card={card} compact />
-                <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-6 text-center">
+                <div className="flex flex-1 flex-col items-center justify-start overflow-y-auto p-6 text-center [@media(max-height:620px)]:pt-16 md:justify-center">
                     <ExerciseLabel>Как это по-португальски?</ExerciseLabel>
                     <h2 className="mb-6 text-3xl font-bold text-slate-800 dark:text-white">{card.translation}</h2>
                     <AnswerBox expected={card.originalTerm} onReveal={onReveal} allowVoice />
@@ -134,8 +148,9 @@ const ReviewFront: React.FC<Props> = ({ card, exercise, onReveal, onPlayWord, is
 
     if (exercise.type === 'cloze') {
         return (
-            <div className="absolute inset-0 flex flex-col overflow-y-auto bg-white px-6 pb-6 pt-20 dark:bg-slate-800">
-                <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <div className="absolute inset-0 flex flex-col overflow-y-auto bg-white px-6 pb-6 pt-16 dark:bg-slate-800">
+                {/* Phones: content right under the top bar, so the input stays above the keyboard */}
+                <div className="flex flex-1 flex-col items-center justify-start pt-2 text-center md:justify-center md:pt-0">
                     <ExerciseLabel>Вставьте пропущенное слово</ExerciseLabel>
                     <p className="mb-3 font-serif text-2xl leading-relaxed text-slate-800 dark:text-slate-100">
                         {exercise.before}
