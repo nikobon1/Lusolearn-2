@@ -31,6 +31,7 @@ const FrequencyPathView = lazy(() => import('./components/FrequencyPathView'));
 const LessonsView = lazy(() => import('./components/LessonsView'));
 const ConjugationTrainer = lazy(() => import('./components/ConjugationTrainer'));
 const PhrasesView = lazy(() => import('./components/PhrasesView'));
+const Onboarding = lazy(() => import('./components/Onboarding'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const PracticeConfigModal = lazy(() => import('./components/PracticeConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -61,7 +62,7 @@ export default function App() {
 
     const {
         user, cards, setCards, folders, setFolders, savedStories, setSavedStories,
-        loading, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
+        loading, loadedFor, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
     } = useAppData(session, offlineMode);
 
     const { theme, toggleTheme } = useTheme();
@@ -92,6 +93,22 @@ export default function App() {
         const hasVerbs = studyableCards.some(c => c.conjugation?.isVerb || c.tags?.includes('глагол'));
         return buildTodayRoute({ summary: plan.summary, settings: plan.settings, entries: practiceLog.entries, todayTopics, hasVerbs });
     }, [plan.summary, plan.settings, plan.todayNewIds, practiceLog.entries, cards, studyableCards, topicByTerm]);
+
+    // First-run walkthrough: new users (no cards, not seen it on any device); reopened from the menu
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [onboardingChecked, setOnboardingChecked] = useState(false);
+    // Decide only after this account's cards have actually been loaded (not in the gap before fetching starts)
+    const accountKey = session ? session.user.id : offlineMode ? 'offline' : null;
+    useEffect(() => {
+        if (loading || onboardingChecked || !accountKey || loadedFor !== accountKey) return;
+        setOnboardingChecked(true);
+        if (!plan.settings.onboarded && cards.length === 0) setShowOnboarding(true);
+    }, [loading, onboardingChecked, accountKey, loadedFor, plan.settings.onboarded, cards.length]);
+    const finishOnboarding = (goTo: 'frequency' | 'dashboard') => {
+        setShowOnboarding(false);
+        if (!plan.settings.onboarded) plan.setSettings({ onboarded: true });
+        setView(goTo === 'frequency' ? ViewState.Frequency : ViewState.Dashboard);
+    };
 
     /** A short drill launched from the route; cleared when the learner goes elsewhere. */
     const [quick, setQuick] = useState<{ view: ViewState; situation?: Situation; count: number; key: number } | null>(null);
@@ -256,6 +273,7 @@ export default function App() {
                 onLogout={handleLogout}
                 onOpenStudy={startPlanSession}
                 dueCount={dueCount}
+                onShowHelp={() => setShowOnboarding(true)}
             >
                 {view === ViewState.Dashboard && (
                 <DashboardView
@@ -379,6 +397,11 @@ export default function App() {
             )}
 
             {/* MODALS */}
+            {showOnboarding && (
+                <Suspense fallback={null}>
+                    <Onboarding settings={plan.settings} hasCards={cards.length > 0} onChangeSettings={plan.setSettings} onFinish={finishOnboarding} />
+                </Suspense>
+            )}
             {listModalConfig && (
                 <div className="absolute inset-0 z-[60] bg-black/50 backdrop-blur-sm">
                     <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center" />}>

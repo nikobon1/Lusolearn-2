@@ -78,6 +78,8 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
     const [folders, setFolders] = useState<Folder[]>([]);
     const [savedStories, setSavedStories] = useState<SavedStory[]>([]);
     const [loading, setLoading] = useState(true);
+    /** Account whose data has finished loading ('offline' for the demo mode) */
+    const [loadedFor, setLoadedFor] = useState<string | null>(null);
     // Offline mode: don't write localStorage until it has been read, or the empty initial state wipes saved cards
     const offlineLoadedRef = useRef(false);
 
@@ -320,6 +322,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
             console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
+            setLoadedFor(session ? session.user.id : offlineMode ? 'offline' : null);
         }
     }, [offlineMode, session]);
 
@@ -362,6 +365,6 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
 
     return {
         user, setUser, cards, setCards, folders, setFolders, savedStories, setSavedStories,
-        loading, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
+        loading, loadedFor, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
     };
 };

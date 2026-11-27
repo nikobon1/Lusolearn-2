@@ -15,10 +15,11 @@ interface LayoutProps {
     onLogout: () => void;
     onOpenStudy: () => void;
     dueCount: number;
+    onShowHelp: () => void;
 }
 
 const Layout: React.FC<LayoutProps> = ({
-    children, view, setView, user, theme, toggleTheme, onLogout, onOpenStudy, dueCount
+    children, view, setView, user, theme, toggleTheme, onLogout, onOpenStudy, dueCount, onShowHelp
 }) => {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -80,6 +81,9 @@ const Layout: React.FC<LayoutProps> = ({
                     </button>
 
                     <div className="mt-auto space-y-2 border-t border-slate-100 pt-4 dark:border-slate-700">
+                        <button onClick={onShowHelp} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 transition-all hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-current text-[11px] font-bold">?</span> Как это работает
+                        </button>
                         <button onClick={toggleTheme} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 transition-all hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700">
                             {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
                             {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
@@ -156,6 +160,10 @@ const Layout: React.FC<LayoutProps> = ({
                             <button onClick={() => handleViewChange(ViewState.StoryList)} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
                                 <BookIcon className="h-5 w-5" />
                                 <span className="font-semibold">Истории</span>
+                            </button>
+                            <button onClick={() => { setShowMobileMenu(false); onShowHelp(); }} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-current text-[11px] font-bold">?</span>
+                                <span className="font-semibold">Как это работает</span>
                             </button>
                             <button onClick={handleThemeToggle} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
                                 {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
