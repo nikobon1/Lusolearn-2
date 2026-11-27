@@ -12,6 +12,7 @@ import { planRemaining } from './domain/dailyPlan';
 import { notifyError, notifyInfo, notifySuccess } from './lib/notifications';
 import { activeCards, withPaused } from './domain/paused';
 import { usePracticeLog } from './hooks/usePracticeLog';
+import { useReviewHistory } from './hooks/useReviewHistory';
 import { CONJUGATIONS_PER_DAY, PHRASES_PER_DAY, RouteStep, buildTodayRoute } from './domain/todayRoute';
 import { answeredOn, dayKey } from './domain/practiceLog';
 import type { Situation } from './domain/phraseTemplates';
@@ -78,6 +79,7 @@ export default function App() {
     const studyableCards = useMemo(() => activeCards(cards), [cards]);
     const plan = useDailyPlan(studyableCards, session?.user.id);
     const practiceLog = usePracticeLog(session?.user.id);
+    const reviewHistory = useReviewHistory(session?.user.id);
 
     // «Занятие на сегодня»
     const [topicByTerm, setTopicByTerm] = useState<Map<string, Topic>>(new Map());
@@ -297,6 +299,9 @@ export default function App() {
                     onOpenList={setListModalConfig} onStudySingleCard={handleStudySingleCard} theme={theme} toggleTheme={toggleTheme}
                     planSummary={plan.summary} planSettings={plan.settings} onChangePlanSettings={plan.setSettings} onStartPlan={startPlanSession}
                     routeSteps={routeSteps} onRouteStep={handleRouteStep} onStartChoice={startWith}
+                    reviewRecords={reviewHistory.records} practiceEntries={practiceLog.entries}
+                    onShowCards={(title, list) => setListModalConfig({ title, filter: 'learned', cardIds: list.map(c => c.id) })}
+                    onPracticeCards={(list) => { if (list.length) openStudy(list, true); }}
                 />
             )}
 
@@ -309,7 +314,7 @@ export default function App() {
                             onComplete={() => setView(ViewState.Dashboard)}
                             onUpdateCard={(updated) => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
                             onProgress={recordReviewProgress}
-                            onReviewed={plan.recordReview}
+                            onReviewed={(event) => { plan.recordReview(event); reviewHistory.add(event); }}
                             getMoreCards={plan.getQueue}
                             getExtraCards={plan.getExtraQueue}
                             level={plan.settings.level}
@@ -431,7 +436,7 @@ export default function App() {
             {listModalConfig && (
                 <div className="absolute inset-0 z-[60] bg-black/50 backdrop-blur-sm">
                     <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center" />}>
-                        <WordListModal title={listModalConfig?.title || ''} cards={listModalConfig?.filter === 'learned' ? cards.filter(c => c.interval > 0) : cards.filter(c => c.interval === 0)} onClose={() => setListModalConfig(null)} onCardClick={handleStudySingleCard} onSetPaused={handleSetPaused} />
+                        <WordListModal title={listModalConfig?.title || ''} cards={listModalConfig.cardIds ? cards.filter(c => listModalConfig.cardIds!.includes(c.id)) : listModalConfig.filter === 'learned' ? cards.filter(c => c.interval > 0) : cards.filter(c => c.interval === 0)} onClose={() => setListModalConfig(null)} onCardClick={handleStudySingleCard} onSetPaused={handleSetPaused} />
                     </Suspense>
                 </div>
             )}
