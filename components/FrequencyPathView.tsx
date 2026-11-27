@@ -17,6 +17,8 @@ interface Props {
     onCardsCreated: (cards: Flashcard[]) => Promise<void>;
     ensureFolder: () => Promise<string>;
     onStudyCards: (cards: Flashcard[]) => void;
+    /** Opened from «С чего начнём?» with a topic */
+    initialFocus?: BatchFocus;
 }
 
 type Tab = 'today' | 'dictionary';
@@ -73,11 +75,11 @@ const matchesPos = (p: PartOfSpeech, filter: PosFilter) => {
     return p === filter;
 };
 
-const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFolder, onStudyCards }) => {
+const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ensureFolder, onStudyCards, initialFocus }) => {
     const [dictionary, setDictionary] = useState<FrequencyEntry[] | null>(null);
     const [loadError, setLoadError] = useState(false);
     const [tab, setTab] = useState<Tab>('today');
-    const [focus, setFocus] = useState<BatchFocus>('all');
+    const [focus, setFocus] = useState<BatchFocus>(initialFocus ?? 'all');
 
     const [generating, setGenerating] = useState<{ current: number; total: number; word: string } | null>(null);
     const [justCreated, setJustCreated] = useState<Flashcard[]>([]);

@@ -49,6 +49,14 @@ export const useFrequencyProgress = (userId?: string) => {
         setState(prev => prev.known.includes(key) ? prev : { ...prev, known: [...prev.known, key] });
     }, []);
 
+    const markManyKnown = useCallback((keys: string[]) => {
+        setState(prev => {
+            const set = new Set(prev.known);
+            keys.forEach(k => set.add(k));
+            return set.size === prev.known.length ? prev : { ...prev, known: [...set] };
+        });
+    }, []);
+
     const unmarkKnown = useCallback((key: string) => {
         setState(prev => ({ ...prev, known: prev.known.filter(k => k !== key) }));
     }, []);
@@ -63,6 +71,7 @@ export const useFrequencyProgress = (userId?: string) => {
         knownKeys,
         dailyGoal: state.dailyGoal,
         markKnown,
+        markManyKnown,
         unmarkKnown,
         setDailyGoal,
     };

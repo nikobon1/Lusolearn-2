@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { PlanSettings } from '../domain/dailyPlan';
 import type { CefrLevel } from '../domain/reviewExercise';
+import StartChooser, { StartChoice } from './StartChooser';
 
 interface Props {
     settings: PlanSettings;
     hasCards: boolean;
     onChangeSettings: (patch: Partial<PlanSettings>) => void;
-    /** `goTo`: where to go after the last step */
-    onFinish: (goTo: 'frequency' | 'dashboard') => void;
+    /** Closes the walkthrough: back to the home screen, or into the chosen way to start */
+    onFinish: (goTo: 'dashboard' | StartChoice) => void;
 }
 
 const LEVELS: { id: string; label: string; hint: string; level: CefrLevel }[] = [
@@ -123,22 +124,25 @@ const Onboarding: React.FC<Props> = ({ settings, hasCards, onChangeSettings, onF
                 </div>
             ),
         },
-        {
-            title: hasCards ? 'Всё готово!' : 'Начнём с первых слов',
-            body: (
-                <div className="space-y-3 text-slate-600 dark:text-slate-300">
-                    {hasCards ? (
+        hasCards
+            ? {
+                title: 'Всё готово!',
+                body: (
+                    <div className="space-y-3 text-slate-600 dark:text-slate-300">
                         <p>Ваши карточки на месте. Нажмите <b>«Начать»</b> в «Занятии на сегодня» — и вперёд.</p>
-                    ) : (
-                        <>
-                            <p>Пока у вас нет карточек. Откроем <b>«С нуля»</b>: нажмите <b>«Создать {settings.newPerDay || 10} карточек»</b> — это первые самые нужные слова.</p>
-                            <p>Потом — «Учить сейчас» или «Занятие на сегодня» на главной.</p>
-                        </>
-                    )}
-                    <p className="text-sm text-slate-400">Это объяснение можно открыть снова: меню → «Как это работает».</p>
-                </div>
-            ),
-        },
+                        <p className="text-sm text-slate-400">Это объяснение можно открыть снова: меню → «Как это работает».</p>
+                    </div>
+                ),
+            }
+            : {
+                title: 'С чего начнём?',
+                body: (
+                    <div className="space-y-3">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Выберите, что вам ближе. Остальное останется доступно в меню.</p>
+                        <StartChooser onPick={choice => onFinish(choice)} />
+                    </div>
+                ),
+            },
     ];
 
     const last = step === steps.length - 1;
@@ -161,12 +165,18 @@ const Onboarding: React.FC<Props> = ({ settings, hasCards, onChangeSettings, onF
                     {step > 0 && (
                         <button onClick={() => setStep(s => s - 1)} className="rounded-2xl bg-slate-100 px-5 py-3 font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">Назад</button>
                     )}
-                    <button
-                        onClick={() => (last ? onFinish(hasCards ? 'dashboard' : 'frequency') : setStep(s => s + 1))}
-                        className="flex-1 rounded-2xl bg-emerald-600 py-3 font-bold text-white shadow-lg hover:bg-emerald-700"
-                    >
-                        {last ? (hasCards ? 'К занятию' : 'Открыть «С нуля»') : step === 0 ? 'Поехали' : 'Дальше'}
-                    </button>
+                    {last && !hasCards ? (
+                        <button onClick={() => onFinish('dashboard')} className="flex-1 rounded-2xl py-3 font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700">
+                            Решу позже
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => (last ? onFinish('dashboard') : setStep(s => s + 1))}
+                            className="flex-1 rounded-2xl bg-emerald-600 py-3 font-bold text-white shadow-lg hover:bg-emerald-700"
+                        >
+                            {last ? 'К занятию' : step === 0 ? 'Поехали' : 'Дальше'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
