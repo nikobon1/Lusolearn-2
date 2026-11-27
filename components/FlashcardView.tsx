@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+
+const FLIP_HALF_MS = 140;
 import { Flashcard, Example, Pattern } from '../types';
 import { VolumeIcon, BookIcon, XIcon, HomeIcon, GridIcon, LoaderIcon, MicIcon } from './Icons';
 import { playAudio, loadAudio, getOrGenerateAudio, preloadAudio, translateExplanationToRussian } from '../services/geminiService';
@@ -49,6 +51,32 @@ interface Props {
 
 const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUpdate }) => {
     const [isFlipped, setIsFlipped] = useState(false);
+    /**
+     * Flip animation: the card turns edge-on (out), the side is swapped,
+     * then it turns back from the other edge (in). ~300 ms in total.
+     */
+    const [flipPhase, setFlipPhase] = useState<'idle' | 'out' | 'in-start'>('idle');
+    const flipTimer = useRef<number | null>(null);
+    useEffect(() => () => { if (flipTimer.current) window.clearTimeout(flipTimer.current); }, []);
+    const flipTo = (value: boolean) => {
+        const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduced || flipPhase !== 'idle') { setIsFlipped(value); return; }
+        setFlipPhase('out');
+        flipTimer.current = window.setTimeout(() => {
+            setIsFlipped(value);
+            setFlipPhase('in-start');
+            // next frame: animate from the far edge back to flat
+            requestAnimationFrame(() => requestAnimationFrame(() => setFlipPhase('idle')));
+        }, FLIP_HALF_MS);
+    };
+    const flipStyle: React.CSSProperties = {
+        transform: flipPhase === 'out' ? 'perspective(1400px) rotateY(90deg)'
+            : flipPhase === 'in-start' ? 'perspective(1400px) rotateY(-90deg)'
+            : 'none', // no transform at rest: it would trap position:fixed overlays inside the card
+        transition: flipPhase === 'in-start' ? 'none'
+            : flipPhase === 'out' ? `transform ${FLIP_HALF_MS}ms cubic-bezier(0.55, 0, 0.9, 0.5)`
+            : `transform ${FLIP_HALF_MS + 30}ms cubic-bezier(0.1, 0.5, 0.45, 1)`,
+    };
     const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
     // Track which audio source is currently active: 'main' | 'example' | null
     const [playingTarget, setPlayingTarget] = useState<'main' | 'example' | null>(null);
@@ -238,7 +266,7 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden relative border border-slate-200 dark:border-slate-700">
+        <div style={flipStyle} className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden relative border border-slate-200 dark:border-slate-700">
 
             {/* Top Navigation Bar */}
             <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20 pointer-events-none">
@@ -278,7 +306,7 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                                 const expected = exercise.type === 'cloze' ? exercise.answer : card.originalTerm;
                                 setAnswerResult(result ?? { verdict: 'wrong', given: '', expected });
                             }
-                            setIsFlipped(true);
+                            flipTo(true);
                         }}
                     />
                 )}
@@ -287,7 +315,7 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                 {isFlipped && (
                     <div className="absolute inset-0 bg-white dark:bg-slate-800 flex flex-col animate-in fade-in duration-300">
                         {/* Header Area with Padding Top */}
-                        <div className={`pt-20 px-6 pb-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between bg-slate-50/50 dark:bg-slate-800/50 ${exercise.type === 'recognition' ? 'cursor-pointer' : ''}`} onClick={() => { if (exercise.type === 'recognition') setIsFlipped(false); }}>
+                        <div className={`pt-20 px-6 pb-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between bg-slate-50/50 dark:bg-slate-800/50 ${exercise.type === 'recognition' ? 'cursor-pointer' : ''}`} onClick={() => { if (exercise.type === 'recognition') flipTo(false); }}>
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">
                                     {card.originalTerm}
