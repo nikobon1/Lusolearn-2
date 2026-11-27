@@ -302,6 +302,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
                         interval: row.interval,
                         easeFactor: row.ease_factor,
                         nextReviewDate: row.next_review_date,
+                        fsrs: row.fsrs || undefined,
                         createdAt: new Date(row.created_at).getTime(),
                         difficulty: row.difficulty || Difficulty.New,
                         definition: row.definition,
@@ -373,7 +374,7 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
             const row = byId.get(c.id);
             if (!row) return c;
             if (row.interval === c.interval && row.next_review_date === c.nextReviewDate && row.ease_factor === c.easeFactor) return c;
-            return { ...c, interval: row.interval, easeFactor: row.ease_factor, nextReviewDate: row.next_review_date, difficulty: row.difficulty || c.difficulty };
+            return { ...c, interval: row.interval, easeFactor: row.ease_factor, nextReviewDate: row.next_review_date, difficulty: row.difficulty || c.difficulty, fsrs: row.fsrs || c.fsrs };
         }));
     }, [session, offlineMode]);
 

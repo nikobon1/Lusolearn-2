@@ -58,6 +58,8 @@ export interface Flashcard {
   nextReviewDate: number; // Timestamp
   interval: number; // Current interval in days (0 for learning steps)
   easeFactor: number; // SM-2 Ease factor (starts at 2.5)
+  /** FSRS memory state (stability, difficulty…); absent until the first review with FSRS */
+  fsrs?: import('./domain/fsrs').FsrsState;
   
   createdAt: number;
 }
