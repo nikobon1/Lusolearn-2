@@ -3,6 +3,10 @@ import { Flashcard, Example, Pattern } from '../types';
 import { VolumeIcon, BookIcon, XIcon, HomeIcon, GridIcon, LoaderIcon, MicIcon } from './Icons';
 import { playAudio, loadAudio, getOrGenerateAudio, preloadAudio, translateExplanationToRussian } from '../services/geminiService';
 import { useSpeechRecording } from '../hooks/useSpeechRecording';
+import VoiceMeter from './VoiceMeter';
+import { useFrequencyRanks } from '../hooks/useFrequencyRanks';
+import { normalizeTerm } from '../domain/frequencyDictionary';
+import { sounds } from '../lib/sounds';
 import { Exercise } from '../domain/reviewExercise';
 import ReviewFront, { AnswerResult } from './ReviewFront';
 import { describeAiError } from '../services/client';
@@ -81,6 +85,16 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
     const [showPronunciationMode, setShowPronunciationMode] = useState(false);
     const [pronunciationTarget, setPronunciationTarget] = useState<'word' | 'sentence'>('word');
     const speech = useSpeechRecording();
+    const ranks = useFrequencyRanks();
+    const frequencyRank = ranks?.get(normalizeTerm(card.originalTerm)) ?? null;
+
+    // Sound for the pronunciation result
+    useEffect(() => {
+        if (!speech.result) return;
+        if (speech.result.isCorrect) sounds.success();
+        else if (speech.result.score >= 45) sounds.almost();
+        else sounds.error();
+    }, [speech.result]);
 
     // Preload audio on mount - AGGRESSIVE PRELOADING
     useEffect(() => {
@@ -275,7 +289,17 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                         {/* Header Area with Padding Top */}
                         <div className={`pt-20 px-6 pb-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between bg-slate-50/50 dark:bg-slate-800/50 ${exercise.type === 'recognition' ? 'cursor-pointer' : ''}`} onClick={() => { if (exercise.type === 'recognition') setIsFlipped(false); }}>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">{card.originalTerm}</h2>
+                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">
+                                    {card.originalTerm}
+                                    {frequencyRank !== null && (
+                                        <span
+                                            className="ml-2 inline-block rounded-md bg-slate-100 px-1.5 py-0.5 align-middle font-mono text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300"
+                                            title={`${frequencyRank}-е по частоте слово португальского языка`}
+                                        >
+                                            #{frequencyRank}
+                                        </span>
+                                    )}
+                                </h2>
                                 <p className="text-slate-500 dark:text-slate-400 text-lg">{card.translation}</p>
                             </div>
                             <div className="flex gap-2 items-center">
@@ -551,7 +575,7 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                                             const targetText = pronunciationTarget === 'word' ? card.originalTerm : (currentExample?.sentence || '');
                                             await speech.stopAndEvaluate(targetText);
                                         } else {
-                                            await speech.startRecording();
+                                            await speech.startRecording({ autoStopText: pronunciationTarget === 'word' ? card.originalTerm : (currentExample?.sentence || '') });
                                         }
                                     }}
                                     disabled={speech.isProcessing}
@@ -572,12 +596,8 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                                 </button>
                             )}
 
-                            {speech.isRecording && (
-                                <p className="text-rose-600 dark:text-rose-400 font-medium animate-pulse">🔴 Запись... Нажмите чтобы остановить</p>
-                            )}
-
-                            {speech.isProcessing && (
-                                <p className="text-slate-500 dark:text-slate-400">Обработка...</p>
+                            {(speech.isRecording || speech.isProcessing) && (
+                                <VoiceMeter level={speech.level} voiceDetected={speech.voiceDetected} processing={speech.isProcessing} autoStop />
                             )}
 
                             {/* Error Display */}

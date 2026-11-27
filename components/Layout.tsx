@@ -79,12 +79,6 @@ const Layout: React.FC<LayoutProps> = ({
                         <BookIcon className="h-5 w-5" /> Фразы
                     </button>
 
-                    <div className="my-4 border-t border-slate-100 pt-4 dark:border-slate-700">
-                        <button onClick={() => setView(ViewState.Create)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg transition-all hover:bg-emerald-700">
-                            <PlusIcon className="h-5 w-5" /> Добавить слова
-                        </button>
-                    </div>
-
                     <div className="mt-auto space-y-2 border-t border-slate-100 pt-4 dark:border-slate-700">
                         <button onClick={toggleTheme} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 transition-all hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700">
                             {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}

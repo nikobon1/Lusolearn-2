@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { sounds } from '../lib/sounds';
 import { transcribeAudio, comparePronunciation, PronunciationScore, TranscriptionResult } from '../services/speechRecognition';
 
 interface UseSpeechRecordingResult {
@@ -8,7 +9,15 @@ interface UseSpeechRecordingResult {
     result: PronunciationScore | null;
     transcription: TranscriptionResult | null;
     recordingUrl: string | null;
-    startRecording: () => Promise<void>;
+    /** Microphone loudness 0..1 while recording (for the live animation) */
+    level: number;
+    /** Speech has been heard in the current recording */
+    voiceDetected: boolean;
+    /**
+     * Starts recording. With `autoStopText`, recording stops by itself after a pause
+     * once speech was heard, and is evaluated against that text.
+     */
+    startRecording: (options?: { autoStopText?: string }) => Promise<void>;
     stopAndEvaluate: (expectedText: string) => Promise<PronunciationScore | null>;
     playRecording: () => void;
     reset: () => void;
@@ -26,10 +35,71 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
     const chunksRef = useRef<Blob[]>([]);
     const streamRef = useRef<MediaStream | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [level, setLevel] = useState(0);
+    const [voiceDetected, setVoiceDetected] = useState(false);
+    const isRecordingRef = useRef(false);
+    const meterRef = useRef<{ ctx: AudioContext; raf: number } | null>(null);
+    const stopRef = useRef<((text: string) => Promise<PronunciationScore | null>) | null>(null);
 
-    const startRecording = useCallback(async () => {
+    const stopMeter = useCallback(() => {
+        const m = meterRef.current;
+        if (!m) return;
+        cancelAnimationFrame(m.raf);
+        m.ctx.close().catch(() => undefined);
+        meterRef.current = null;
+        setLevel(0);
+    }, []);
+
+    /**
+     * Live loudness for the animation + simple voice activity detection:
+     * once speech was heard, ~1.2 s of quiet ends the recording (when auto-stop is on).
+     */
+    const startMeter = useCallback((stream: MediaStream, autoStopText?: string) => {
+        try {
+            const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+            const ctx: AudioContext = new Ctx();
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 512;
+            ctx.createMediaStreamSource(stream).connect(analyser);
+            const data = new Uint8Array(analyser.fftSize);
+            const startedAt = performance.now();
+            let noise = 0.01;
+            let heard = false;
+            let lastLoud = startedAt;
+            let lastUi = 0;
+            const tick = (now: number) => {
+                analyser.getByteTimeDomainData(data);
+                let sum = 0;
+                for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v; }
+                const rms = Math.sqrt(sum / data.length);
+                // Learn the background level during the first moments
+                if (!heard && now - startedAt < 400) noise = Math.max(noise, rms);
+                const loud = rms > Math.max(0.02, noise * 2.5);
+                if (loud) {
+                    lastLoud = now;
+                    if (!heard && now - startedAt > 150) { heard = true; setVoiceDetected(true); }
+                }
+                if (now - lastUi > 50) { lastUi = now; setLevel(Math.min(1, rms * 6)); }
+                const stopFn = stopRef.current;
+                if (autoStopText && stopFn && isRecordingRef.current
+                    && ((heard && now - lastLoud > 1200) || now - startedAt > 15000)) {
+                    stopFn(autoStopText);
+                    return;
+                }
+                if (meterRef.current) meterRef.current.raf = requestAnimationFrame(tick);
+            };
+            meterRef.current = { ctx, raf: requestAnimationFrame(tick) };
+        } catch (err) {
+            console.warn('[Speech] Level meter unavailable', err);
+        }
+    }, []);
+
+    useEffect(() => () => stopMeter(), [stopMeter]);
+
+    const startRecording = useCallback(async (options?: { autoStopText?: string }) => {
         try {
             setError(null);
+            setVoiceDetected(false);
             setResult(null);
             setTranscription(null);
             // Clean up previous recording URL
@@ -63,8 +133,11 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
             };
 
             mediaRecorderRef.current = mediaRecorder;
+            sounds.recordStart();
             mediaRecorder.start(100); // Collect data every 100ms
+            isRecordingRef.current = true;
             setIsRecording(true);
+            startMeter(stream, options?.autoStopText);
 
             console.log('[Speech] 🔴 Recording started');
 
@@ -78,14 +151,17 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                 setError('Ошибка при доступе к микрофону: ' + err.message);
             }
         }
-    }, [recordingUrl]);
+    }, [recordingUrl, startMeter]);
 
     const stopAndEvaluate = useCallback(async (expectedText: string): Promise<PronunciationScore | null> => {
         return new Promise((resolve) => {
-            if (!mediaRecorderRef.current || !isRecording) {
+            if (!mediaRecorderRef.current || !isRecordingRef.current) {
                 resolve(null);
                 return;
             }
+            isRecordingRef.current = false;
+            stopMeter();
+            sounds.recordStop();
 
             const mediaRecorder = mediaRecorderRef.current;
 
@@ -120,6 +196,7 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
 
                     if (audioBlob.size < 1000) {
                         setError('Запись слишком короткая. Попробуйте говорить громче.');
+                        sounds.error();
                         setIsProcessing(false);
                         resolve(null);
                         return;
@@ -135,6 +212,7 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
 
                     if (!transcriptionResult.transcript) {
                         setError('Речь не распознана. Попробуйте говорить чётче.');
+                        sounds.error();
                         setIsProcessing(false);
                         resolve(null);
                         return;
@@ -148,6 +226,7 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
                 } catch (err: any) {
                     console.error('[Speech] ❌ Processing error:', err);
                     setError('Ошибка обработки: ' + err.message);
+                    sounds.error();
                     setIsProcessing(false);
                     resolve(null);
                 }
@@ -156,7 +235,8 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
             // Stop the recorder - this will trigger final dataavailable, then onstop
             mediaRecorder.stop();
         });
-    }, [isRecording]);
+    }, [stopMeter]);
+    stopRef.current = stopAndEvaluate;
 
     const playRecording = useCallback(() => {
         if (!recordingUrl) return;
@@ -180,6 +260,9 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
         setTranscription(null);
         setIsProcessing(false);
         setIsRecording(false);
+        isRecordingRef.current = false;
+        setVoiceDetected(false);
+        stopMeter();
 
         // Clean up recording URL
         if (recordingUrl) {
@@ -196,7 +279,7 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
             audioRef.current.pause();
             audioRef.current = null;
         }
-    }, [recordingUrl]);
+    }, [recordingUrl, stopMeter]);
 
     return {
         isRecording,
@@ -205,6 +288,8 @@ export function useSpeechRecording(): UseSpeechRecordingResult {
         result,
         transcription,
         recordingUrl,
+        level,
+        voiceDetected,
         startRecording,
         stopAndEvaluate,
         playRecording,
