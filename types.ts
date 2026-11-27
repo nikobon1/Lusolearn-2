@@ -76,6 +76,8 @@ export interface SavedStory {
   audioUrl?: string; // Public URL from Supabase
   wordsUsed: string[];
   createdAt: number;
+  /** New-format (graded) story: sentences, glossary, questions, series */
+  data?: import('./domain/gradedStory').GradedStory;
 }
 
 export type QuestType = 'review_cards' | 'add_cards' | 'create_story';

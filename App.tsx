@@ -18,6 +18,11 @@ import { answeredOn, dayKey } from './domain/practiceLog';
 import type { Situation } from './domain/phraseTemplates';
 import { BatchFocus, Topic, loadFrequencyDictionary, normalizeTerm } from './domain/frequencyDictionary';
 import type { StartChoice } from './components/StartChooser';
+import type { StoryConfig } from './components/StoryConfigModal';
+import { GlossEntry, pickConsolidationWords, storyReadToday } from './domain/gradedStory';
+import { hardWords } from './domain/stats';
+import { buildFlashcard } from './services/cardFactory';
+import { useFrequencyProgress } from './hooks/useFrequencyProgress';
 import { updateFlashcardTags } from './services/repositories/flashcardsRepository';
 import { useStoryState } from './hooks/useStoryState';
 import { LoaderIcon } from './components/Icons';
@@ -35,6 +40,7 @@ const ConjugationTrainer = lazy(() => import('./components/ConjugationTrainer'))
 const PhrasesView = lazy(() => import('./components/PhrasesView'));
 const Onboarding = lazy(() => import('./components/Onboarding'));
 const PlacementTest = lazy(() => import('./components/PlacementTest'));
+const GradedStoryView = lazy(() => import('./components/GradedStoryView'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const PracticeConfigModal = lazy(() => import('./components/PracticeConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -65,7 +71,7 @@ export default function App() {
 
     const {
         user, cards, setCards, folders, setFolders, savedStories, setSavedStories,
-        loading, loadedFor, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
+        loading, loadedFor, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb, saveGradedStory
     } = useAppData(session, offlineMode);
 
     const { theme, toggleTheme } = useTheme();
@@ -97,8 +103,14 @@ export default function App() {
             .map(c => topicByTerm.get(normalizeTerm(c.originalTerm)))
             .filter((t): t is Topic => !!t);
         const hasVerbs = studyableCards.some(c => c.conjugation?.isVerb || c.tags?.includes('глагол'));
-        return buildTodayRoute({ summary: plan.summary, settings: plan.settings, entries: practiceLog.entries, todayTopics, hasVerbs });
-    }, [plan.summary, plan.settings, plan.todayNewIds, practiceLog.entries, cards, studyableCards, topicByTerm]);
+        const learningWords = studyableCards.filter(c => c.interval > 0 && c.interval < 7).length;
+        const storyToday = storyReadToday(session?.user.id) || savedStories.some(st => st.data && st.createdAt >= startOfDay);
+        const nextEpisode = savedStories.filter(st => st.data?.series).reduce((m, st) => Math.max(m, st.data!.series!.episode), 0) + 1;
+        return buildTodayRoute({
+            summary: plan.summary, settings: plan.settings, entries: practiceLog.entries, todayTopics, hasVerbs,
+            story: learningWords >= 5 || storyToday ? { done: storyToday, episode: nextEpisode } : undefined,
+        });
+    }, [plan.summary, plan.settings, plan.todayNewIds, practiceLog.entries, cards, studyableCards, topicByTerm, savedStories, session?.user.id]);
 
     // First-run walkthrough: new users (no cards, not seen it on any device); reopened from the menu
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -173,9 +185,47 @@ export default function App() {
     };
 
     const {
-        storyCards, viewingStory, setViewingStory, showStoryConfig, setShowStoryConfig, storyGenIndex,
-        handleStartStory, handleSaveStory
+        viewingStory, setViewingStory, showStoryConfig, setShowStoryConfig, storyGenIndex,
     } = useStoryState(cards, setView, saveStoryToDb);
+
+    // Graded stories: words to consolidate, mostly known vocabulary, series memory
+    const frequencyProgress = useFrequencyProgress(session?.user.id);
+    const [storyRequest, setStoryRequest] = useState<{ words: Flashcard[]; series: boolean; key: number } | null>(null);
+    const startGradedStory = (config: StoryConfig) => {
+        let words: Flashcard[];
+        if (config.source === 'consolidate') {
+            const hardIds = hardWords(reviewHistory.records, studyableCards, 10).map(h => h.card.id);
+            words = pickConsolidationWords(studyableCards, config.count, hardIds);
+        } else {
+            let pool = studyableCards;
+            if (config.source === 'folder' && config.folderId && config.folderId !== 'all') {
+                pool = config.folderId === 'default' ? pool.filter(c => c.folderIds.length === 0) : pool.filter(c => c.folderIds.includes(config.folderId!));
+            } else if (config.source === 'recent') {
+                const cutoff = Date.now() - (config.recentDays || 7) * 86_400_000;
+                pool = pool.filter(c => c.createdAt >= cutoff);
+            }
+            words = [...pool].sort(() => Math.random() - 0.5).slice(0, config.count);
+        }
+        if (words.length < 2) {
+            notifyInfo('Мало подходящих слов для истории — выберите другой источник или добавьте слова.');
+            return;
+        }
+        setStoryRequest({ words, series: config.series, key: Date.now() });
+        setViewingStory(null);
+        setShowStoryConfig(false);
+        setView(ViewState.Story);
+    };
+    const quickStory = () => startGradedStory({ count: 5, source: 'consolidate', series: true });
+    const addStoryCard = async (gloss: GlossEntry, sentence: { pt: string; ru: string }, title: string) => {
+        const folderId = await ensureFolder('Из историй');
+        const card = await buildFlashcard(gloss.lemma, gloss.ru, {
+            folderIds: [folderId],
+            tags: ['история'],
+            allowFallback: true,
+            extraExample: { level: plan.settings.level, sentence: sentence.pt, translation: sentence.ru, source: { title: `История «${title}»` } },
+        });
+        await addCards([card]);
+    };
 
     useEffect(() => {
         // Supabase emits auth events on every return to the tab (token refresh, SIGNED_IN).
@@ -236,6 +286,7 @@ export default function App() {
     const handleRouteStep = (step: RouteStep) => {
         if (step.id === 'reviews' || step.id === 'new') return startPlanSession();
         if (step.id === 'addWords') return setView(ViewState.Frequency);
+        if (step.id === 'story') return quickStory();
         if (step.id === 'phrases') {
             setQuick({ view: ViewState.Phrases, situation: step.situation, count: step.done ? PHRASES_PER_DAY : remainingToday('phrase', PHRASES_PER_DAY), key: Date.now() });
             return setView(ViewState.Phrases);
@@ -393,6 +444,12 @@ export default function App() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {savedStories.map(story => (
                                 <div key={story.id} className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all">
+                                    {story.data && (
+                                        <div className="mb-2">
+                                            {story.data.series && <p className="text-[11px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">{story.data.series.name} · серия {story.data.series.episode}</p>}
+                                            <h3 className="font-serif text-xl font-bold text-slate-800 dark:text-white">{story.data.title}</h3>
+                                        </div>
+                                    )}
                                     <p className="font-serif text-lg text-slate-800 dark:text-slate-200 line-clamp-3 mb-4">{story.contentPt}</p>
                                     <div className="flex justify-between items-center pt-4 border-t border-slate-50 dark:border-slate-700">
                                         <span className="text-xs text-slate-400">{new Date(story.createdAt).toLocaleDateString()}</span>
@@ -407,14 +464,31 @@ export default function App() {
 
             {view === ViewState.Story && (
                 <Suspense fallback={<ScreenFallback className="h-full flex items-center justify-center p-4" />}>
-                    <StoryView
-                        key={storyGenIndex}
-                        cards={viewingStory ? undefined : storyCards}
-                        initialStory={viewingStory || undefined}
-                        onBack={() => { setViewingStory(null); setView(viewingStory ? ViewState.StoryList : ViewState.Dashboard); }}
-                        onNext={() => { setViewingStory(null); setShowStoryConfig(true); }}
-                        onSave={handleSaveStory}
-                    />
+                    {viewingStory && !viewingStory.data ? (
+                        <StoryView
+                            key={storyGenIndex}
+                            initialStory={viewingStory}
+                            onBack={() => { setViewingStory(null); setView(ViewState.StoryList); }}
+                            onNext={() => { setViewingStory(null); setShowStoryConfig(true); }}
+                        />
+                    ) : (viewingStory?.data || storyRequest) ? (
+                        <GradedStoryView
+                            key={viewingStory ? viewingStory.id : storyRequest!.key}
+                            request={viewingStory ? undefined : { words: storyRequest!.words, series: storyRequest!.series }}
+                            saved={viewingStory?.data}
+                            cards={studyableCards}
+                            markedKnown={frequencyProgress.knownKeys}
+                            level={plan.settings.level}
+                            userId={session?.user.id}
+                            onBack={() => { setViewingStory(null); setView(ViewState.StoryList); }}
+                            onNext={() => {
+                                const series = viewingStory ? !!viewingStory.data?.series : !!storyRequest?.series;
+                                if (series) quickStory(); else { setViewingStory(null); setShowStoryConfig(true); }
+                            }}
+                            onSave={saveGradedStory}
+                            onAddCard={addStoryCard}
+                        />
+                    ) : null}
                 </Suspense>
             )}
 
@@ -460,7 +534,7 @@ export default function App() {
                         totalCards={cards.length}
                         onClose={() => setShowStoryConfig(false)}
                         onGoToCreate={() => setView(ViewState.Create)}
-                        onStart={handleStartStory}
+                        onStart={startGradedStory}
                     />
                 </Suspense>
             )}

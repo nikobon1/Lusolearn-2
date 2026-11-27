@@ -26,7 +26,7 @@ const Chips: React.FC<{ options: number[]; value: number; onChange: (n: number) 
     </div>
 );
 
-const STEP_ICONS: Record<RouteStep['id'], string> = { reviews: '🔁', new: '✨', addWords: '➕', phrases: '💬', conjugation: '🔤' };
+const STEP_ICONS: Record<RouteStep['id'], string> = { reviews: '🔁', new: '✨', addWords: '➕', phrases: '💬', conjugation: '🔤', story: '📖' };
 
 /**
  * «Занятие на сегодня»: today's route (reviews → new words → phrases → verbs) with one main button
