@@ -449,7 +449,7 @@ const FlashcardView: React.FC<Props> = ({ card, exercise, onResult, onBack, onUp
                             {/* Lines from video lessons — separate from the level examples */}
                             {videoExamples.length > 0 && (
                                 <div>
-                                    <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2 tracking-wider">🎬 Из видео</h4>
+                                    <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2 tracking-wider">{videoExamples.every(ex => !ex.source?.url && !ex.source?.lessonId) ? '📖 Из истории' : '🎬 Из видео'}</h4>
                                     {videoExamples.map((ex, i) => {
                                         const long = ex.sentence.length > 220;
                                         return (

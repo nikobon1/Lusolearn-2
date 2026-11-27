@@ -9,7 +9,7 @@ import type { Topic } from './frequencyDictionary';
  * a small dose of new words, then production (phrases, verb forms), interleaved by type.
  */
 
-export type RouteStepId = 'reviews' | 'new' | 'addWords' | 'phrases' | 'conjugation';
+export type RouteStepId = 'reviews' | 'new' | 'addWords' | 'phrases' | 'conjugation' | 'story';
 
 export interface RouteStep {
     id: RouteStepId;
@@ -37,6 +37,8 @@ export interface RouteInput {
     todayTopics: Topic[];
     /** The learner has verbs among their cards */
     hasVerbs: boolean;
+    /** Offer a graded story (enough words being learned, or already read today) */
+    story?: { done: boolean; episode: number };
     now?: number;
 }
 
@@ -74,7 +76,7 @@ export const pickSituation = (entries: PracticeEntry[], todayTopics: Topic[], no
     return [...SITUATIONS].map(s => s.id).sort((a, b) => (lastSeen.get(a) || 0) - (lastSeen.get(b) || 0))[0];
 };
 
-export const buildTodayRoute = ({ summary, settings, entries, todayTopics, hasVerbs, now = Date.now() }: RouteInput): RouteStep[] => {
+export const buildTodayRoute = ({ summary, settings, entries, todayTopics, hasVerbs, story, now = Date.now() }: RouteInput): RouteStep[] => {
     const steps: RouteStep[] = [];
     const today = dayKey(now);
     const yesterday = dayKey(now - 86_400_000);
@@ -140,6 +142,18 @@ export const buildTodayRoute = ({ summary, settings, entries, todayTopics, hasVe
                 : `${CONJUGATIONS_PER_DAY - conjToday} форм · ${hasVerbs ? 'ваши глаголы' : 'самые частые глаголы'}`,
             minutes: conjToday >= CONJUGATIONS_PER_DAY ? 0 : 2,
             done: conjToday >= CONJUGATIONS_PER_DAY,
+        });
+    }
+
+    // 5. Reading — optional bonus: today's fragile words in a short story
+    if (story) {
+        steps.push({
+            id: 'story',
+            title: 'Прочитать историю',
+            detail: story.done ? 'прочитано' : `серия ${story.episode} · ваши новые слова в тексте`,
+            minutes: story.done ? 0 : 3,
+            done: story.done,
+            optional: true,
         });
     }
 

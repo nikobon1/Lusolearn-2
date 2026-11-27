@@ -2,23 +2,31 @@ import React, { useState, useMemo } from 'react';
 import { Folder } from '../types';
 import { BookIcon, XIcon, PlusIcon } from './Icons';
 
+export interface StoryConfig {
+    count: number;
+    source: 'consolidate' | 'folder' | 'recent';
+    folderId?: string;
+    recentDays?: number;
+    /** Next episode of the ongoing series instead of a standalone story */
+    series: boolean;
+}
+
 interface StoryConfigModalProps {
     folders: Folder[];
     currentFolderId: string;
     totalCards: number;
     onClose: () => void;
     onGoToCreate: () => void;
-    onStart: (config: { count: number; source: 'folder' | 'frequency' | 'recent'; folderId?: string; frequency?: string; recentDays?: number }) => void;
+    onStart: (config: StoryConfig) => void;
 }
 
 const StoryConfigModal: React.FC<StoryConfigModalProps> = ({ folders, currentFolderId, totalCards, onClose, onGoToCreate, onStart }) => {
-    const [count, setCount] = useState(3);
-    const [source, setSource] = useState<'folder' | 'frequency' | 'recent'>('folder');
+    const [count, setCount] = useState(5);
+    const [source, setSource] = useState<StoryConfig['source']>('consolidate');
+    const [series, setSeries] = useState(true);
     const [selectedFolder, setSelectedFolder] = useState(currentFolderId === 'all' ? 'all' : currentFolderId);
-    const [selectedFreq, setSelectedFreq] = useState('Top 500');
     const [recentDays, setRecentDays] = useState<number>(7);
 
-    const freqOptions = ["Top 500", "Top 1000", "Top 3000", "Top 5000"];
 
     const uniqueFolders = useMemo(() => {
         const seen = new Set<string>();
@@ -73,8 +81,8 @@ const StoryConfigModal: React.FC<StoryConfigModalProps> = ({ folders, currentFol
                 <div className="mb-6">
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Откуда брать слова?</label>
                     <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg mb-4">
-                        <button onClick={() => setSource('folder')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${source === 'folder' ? 'bg-white dark:bg-slate-600 text-emerald-600 dark:text-emerald-400 shadow' : 'text-slate-500 dark:text-slate-400'}`}>Папки</button>
-                        <button onClick={() => setSource('frequency')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${source === 'frequency' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow' : 'text-slate-500 dark:text-slate-400'}`}>Частота</button>
+                        <button onClick={() => setSource('consolidate')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${source === 'consolidate' ? 'bg-white dark:bg-slate-600 text-emerald-600 dark:text-emerald-400 shadow' : 'text-slate-500 dark:text-slate-400'}`}>Закрепить</button>
+                        <button onClick={() => setSource('folder')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${source === 'folder' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow' : 'text-slate-500 dark:text-slate-400'}`}>Папка</button>
                         <button onClick={() => setSource('recent')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${source === 'recent' ? 'bg-white dark:bg-slate-600 text-amber-600 dark:text-amber-400 shadow' : 'text-slate-500 dark:text-slate-400'}`}>Недавние</button>
                     </div>
 
@@ -90,18 +98,10 @@ const StoryConfigModal: React.FC<StoryConfigModalProps> = ({ folders, currentFol
                         </select>
                     )}
 
-                    {source === 'frequency' && (
-                        <div className="grid grid-cols-2 gap-2">
-                            {freqOptions.map(f => (
-                                <button 
-                                    key={f} 
-                                    onClick={() => setSelectedFreq(f)}
-                                    className={`py-2 rounded-lg text-xs font-bold border transition-all ${selectedFreq === f ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-400' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300'}`}
-                                >
-                                    {f}
-                                </button>
-                            ))}
-                        </div>
+                    {source === 'consolidate' && (
+                        <p className="rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+                            Слова, которые сейчас закрепляются: трудные, недавно выученные и сегодняшние новые. Встретить их в тексте — лучший способ запомнить.
+                        </p>
                     )}
 
                     {source === 'recent' && (
@@ -131,19 +131,27 @@ const StoryConfigModal: React.FC<StoryConfigModalProps> = ({ folders, currentFol
                         <span className="text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{count}</span>
                     </div>
                     <input 
-                        type="range" min="2" max="10" step="1" 
+                        type="range" min="2" max="8" step="1" 
                         value={count} 
                         onChange={(e) => setCount(parseInt(e.target.value))}
                         className="w-full accent-emerald-600 h-2 bg-slate-100 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer" 
                     />
                     <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                         <span>2 (Просто)</span>
-                        <span>10 (Сложно)</span>
+                        <span>8 (Сложно)</span>
                     </div>
                 </div>
 
+                <label className="mb-6 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-100 bg-amber-50/60 p-3 dark:border-amber-800/30 dark:bg-amber-900/10">
+                    <input type="checkbox" checked={series} onChange={e => setSeries(e.target.checked)} className="mt-0.5 h-4 w-4 accent-amber-600" />
+                    <span>
+                        <span className="block text-sm font-bold text-slate-800 dark:text-white">Сериал «Vida em Lisboa»</span>
+                        <span className="block text-xs text-slate-500 dark:text-slate-400">Следующая серия с теми же героями — знакомые места и слова повторяются сами.</span>
+                    </span>
+                </label>
+
                 <button 
-                    onClick={() => onStart({ count, source, folderId: selectedFolder, frequency: selectedFreq, recentDays })}
+                    onClick={() => onStart({ count, source, folderId: selectedFolder, recentDays, series })}
                     className="w-full py-3.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30 hover:bg-emerald-700 transition-all"
                 >
                     Создать историю

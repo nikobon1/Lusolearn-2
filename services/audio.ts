@@ -266,3 +266,30 @@ export const generateAudio = async (text: string, mode: 'card' | 'story' = 'card
         throw error;
     }
 };
+
+// ---------- Sequential playback (story read-aloud with highlighting) ----------
+
+let currentNode: AudioBufferSourceNode | null = null;
+
+/** Stops whatever playAndWait started. */
+export const stopAudio = () => {
+    try { currentNode?.stop(); } catch { /* already stopped */ }
+    currentNode = null;
+};
+
+/** Plays a text (generated/cached TTS) and resolves when playback ends or is stopped. */
+export const playAndWait = async (text: string, rate = 1.0): Promise<void> => {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') await ctx.resume();
+    const buffer = await loadAudio(text);
+    stopAudio();
+    await new Promise<void>(resolve => {
+        const node = ctx.createBufferSource();
+        node.buffer = buffer;
+        node.playbackRate.value = rate;
+        node.connect(ctx.destination);
+        node.onended = () => { if (currentNode === node) currentNode = null; resolve(); };
+        currentNode = node;
+        node.start(0);
+    });
+};

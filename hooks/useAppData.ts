@@ -3,6 +3,7 @@ import { Session } from '@supabase/supabase-js';
 import { supabase, uploadBase64File } from '../services/supabase';
 import { UserProfile, Flashcard, Folder, SavedStory, QuestType, Quest, Difficulty } from '../types';
 import { notifySuccess } from '../lib/notifications';
+import type { GradedStory } from '../domain/gradedStory';
 
 const INITIAL_USER: UserProfile = {
     xp: 0, level: 1, streak: 0, lastStudyDate: '', cardsLearned: 0, learningHistory: {}, quests: []
@@ -222,6 +223,28 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
         }
     };
 
+    /** Saves a graded story (text, glossary, questions) — no audio file: sentences are voiced on demand. */
+    const saveGradedStory = async (story: GradedStory) => {
+        const id = self.crypto.randomUUID();
+        const saved: SavedStory = {
+            id,
+            contentPt: story.sentences.map(s => s.pt).join(' '),
+            contentRu: story.sentences.map(s => s.ru).join(' '),
+            wordsUsed: story.targetWords,
+            createdAt: Date.now(),
+            data: story,
+        };
+        setSavedStories(prev => [saved, ...prev]);
+        if (!session || session.user.email === 'offline@demo.com') return;
+        const row = { id, user_id: session.user.id, content_pt: saved.contentPt, content_ru: saved.contentRu, audio_url: null, words_used: saved.wordsUsed };
+        let { error } = await supabase.from('stories').insert({ ...row, data: story });
+        if (error && /data/i.test(error.message || '')) {
+            console.warn('[Stories] stories.data column missing — run supabase/migrations/20261129_stories_v2.sql. Saving text only.');
+            ({ error } = await supabase.from('stories').insert(row));
+        }
+        if (error) console.error('[Stories] Failed to save story', error);
+    };
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -297,7 +320,8 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
                         contentRu: story.content_ru,
                         audioUrl: story.audio_url,
                         wordsUsed: story.words_used,
-                        createdAt: new Date(story.created_at).getTime()
+                        createdAt: new Date(story.created_at).getTime(),
+                        data: story.data || undefined,
                     })));
                 }
             } else if (offlineMode || session?.user.email === 'offline@demo.com') {
@@ -365,6 +389,6 @@ export const useAppData = (session: Session | null, offlineMode: boolean) => {
 
     return {
         user, setUser, cards, setCards, folders, setFolders, savedStories, setSavedStories,
-        loading, loadedFor, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb
+        loading, loadedFor, fetchData, updateQuestProgress, recordReviewProgress, addCards, saveStoryToDb, saveGradedStory
     };
 };
