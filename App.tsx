@@ -41,6 +41,7 @@ const PhrasesView = lazy(() => import('./components/PhrasesView'));
 const Onboarding = lazy(() => import('./components/Onboarding'));
 const PlacementTest = lazy(() => import('./components/PlacementTest'));
 const GradedStoryView = lazy(() => import('./components/GradedStoryView'));
+const DialoguesView = lazy(() => import('./components/DialoguesView'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 const PracticeConfigModal = lazy(() => import('./components/PracticeConfigModal'));
 const StoryConfigModal = lazy(() => import('./components/StoryConfigModal'));
@@ -59,7 +60,7 @@ export default function App() {
     const [view, setView] = useState<ViewState>(() => {
         try {
             const saved = sessionStorage.getItem('luso_view') as ViewState | null;
-            const restorable = [ViewState.Dashboard, ViewState.Frequency, ViewState.Lessons, ViewState.Conjugation, ViewState.Phrases, ViewState.StoryList, ViewState.Create];
+            const restorable = [ViewState.Dashboard, ViewState.Frequency, ViewState.Lessons, ViewState.Conjugation, ViewState.Phrases, ViewState.Dialogues, ViewState.StoryList, ViewState.Create];
             return saved && restorable.includes(saved) ? saved : ViewState.Dashboard;
         } catch {
             return ViewState.Dashboard;
@@ -428,6 +429,19 @@ export default function App() {
                 <Suspense fallback={<ScreenFallback />}>
                     <PhrasesView key={quick?.view === ViewState.Phrases ? quick.key : 'free'} cards={cards} userId={session?.user.id} onCardsCreated={addCards} ensureFolder={ensureFolder}
                         practice={practiceLog} quickStart={quick?.view === ViewState.Phrases && quick.situation ? { situation: quick.situation, count: quick.count } : null} onQuickDone={backToRoute} />
+                </Suspense>
+            )}
+
+            {view === ViewState.Dialogues && (
+                <Suspense fallback={<ScreenFallback />}>
+                    <DialoguesView
+                        level={plan.settings.level}
+                        onAddPhrase={async (pt, ru) => {
+                            const folderId = await ensureFolder('Из диалогов');
+                            const card = await buildFlashcard(pt, ru, { folderIds: [folderId], tags: ['диалог'], allowFallback: true });
+                            await addCards([card]);
+                        }}
+                    />
                 </Suspense>
             )}
 

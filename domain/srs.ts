@@ -1,4 +1,5 @@
 import { Difficulty, Flashcard } from '../types';
+import { FsrsState, RATING_TO_GRADE, nextFsrs } from './fsrs';
 
 export type ReviewRating = 'again' | 'hard' | 'good' | 'easy';
 
@@ -8,14 +9,13 @@ export interface ReviewOutcome {
     easeFactor: number;
     difficulty: Difficulty;
     countsAsSuccess: boolean;
+    fsrs?: FsrsState;
 }
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 export const DAY_MS = 24 * HOUR_MS;
 
-/** A forgotten mature card keeps this share of its interval instead of starting over. */
-export const LAPSE_INTERVAL_FACTOR = 0.3;
 /** Random spread of review intervals so cards added together don't come back on the same day. */
 export const FUZZ = 0.05;
 
@@ -32,61 +32,38 @@ export const fuzzInterval = (days: number, random = Math.random): number => {
 const scheduled = (interval: number, now: number) => now + interval * DAY_MS;
 
 /**
- * SM-2 style scheduling.
- * - new card: hard → 8 h, good → 1 d, easy → 3 d
- * - review card: hard ×1.2, good ×ease, easy ×ease×1.3 (+ fuzz)
- * - again: back in 10 min; a review card keeps 30% of its interval (lapse) instead of resetting to 0
+ * FSRS scheduling (see domain/fsrs.ts).
+ * - again: back in 10 min in this session; memory stability drops (lapse), interval 0 until relearned
+ * - hard / good / easy: next review when predicted recall falls to 90% (with a little fuzz)
+ * Successful answers never shorten a review card's interval (the "card came back after «Легко»" guard).
  */
 export const getReviewOutcome = (
     card: Flashcard,
     rating: ReviewRating,
     now = Date.now(),
-    random = Math.random
+    _random = Math.random
 ): ReviewOutcome => {
     const ease = clampEase(card.easeFactor || 2.5);
+    const { days, state } = nextFsrs(card, RATING_TO_GRADE[rating], now);
 
     if (rating === 'again') {
-        // Stored so that the next successful review (×ease) lands at ~30% of the old interval:
-        // 60 d forgotten → relearn → next "good" ≈ 18 d, instead of starting from 1 d again.
-        const newEase = clampEase(ease - 0.2);
-        const lapsedInterval = card.interval >= 1
-            ? Math.max(1, Math.round((card.interval * LAPSE_INTERVAL_FACTOR) / newEase))
-            : 0;
         return {
-            interval: lapsedInterval,
+            interval: 0,
             nextReviewDate: now + 10 * MINUTE_MS,
-            easeFactor: newEase,
+            easeFactor: clampEase(ease - 0.2),
             difficulty: Difficulty.Hard,
             countsAsSuccess: false,
+            fsrs: state,
         };
     }
 
-    if (card.interval === 0) {
-        if (rating === 'hard') {
-            return { interval: 0, nextReviewDate: now + 8 * HOUR_MS, easeFactor: clampEase(ease - 0.05), difficulty: Difficulty.Hard, countsAsSuccess: true };
-        }
-        if (rating === 'easy') {
-            return { interval: 3, nextReviewDate: scheduled(3, now), easeFactor: clampEase(ease + 0.15), difficulty: Difficulty.Easy, countsAsSuccess: true };
-        }
-        return { interval: 1, nextReviewDate: scheduled(1, now), easeFactor: ease, difficulty: Difficulty.Medium, countsAsSuccess: true };
+    let interval = Math.max(1, Math.round(days));
+    // Relearned in the same session after «Не вспомнил»: trust the (low) stability, not the long-term guess
+    if (card.interval === 0 && card.fsrs && now - card.fsrs.last < 86_400_000) {
+        interval = Math.max(1, Math.round(state.s));
     }
-
-    let interval: number;
-    let easeFactor = ease;
-    let difficulty = Difficulty.Medium;
-    if (rating === 'hard') {
-        interval = Math.max(card.interval + 1, Math.round(card.interval * 1.2));
-        easeFactor = clampEase(ease - 0.15);
-        difficulty = Difficulty.Hard;
-    } else if (rating === 'easy') {
-        interval = Math.max(card.interval + 2, Math.round(card.interval * ease * 1.3));
-        easeFactor = clampEase(ease + 0.15);
-        difficulty = Difficulty.Easy;
-    } else {
-        interval = Math.max(card.interval + 1, Math.round(card.interval * ease));
-    }
-    // The random spread must never undercut the minimum step (e.g. "easy" after 1 day → at least 3 days)
-    const minimum = card.interval + (rating === 'easy' ? 2 : 1);
-    interval = Math.max(minimum, fuzzInterval(interval, random));
-    return { interval, nextReviewDate: scheduled(interval, now), easeFactor, difficulty, countsAsSuccess: true };
+    if (card.interval > 0 && rating !== 'hard') interval = Math.max(interval, card.interval + (rating === 'easy' ? 2 : 1));
+    const difficulty = rating === 'hard' ? Difficulty.Hard : rating === 'easy' ? Difficulty.Easy : Difficulty.Medium;
+    const easeFactor = rating === 'hard' ? clampEase(ease - 0.15) : rating === 'easy' ? clampEase(ease + 0.15) : ease;
+    return { interval, nextReviewDate: scheduled(interval, now), easeFactor, difficulty, countsAsSuccess: true, fsrs: state };
 };

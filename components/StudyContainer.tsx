@@ -79,6 +79,7 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
             nextReviewDate: outcome.nextReviewDate,
             easeFactor: outcome.easeFactor,
             difficulty: outcome.difficulty,
+            fsrs: outcome.fsrs ?? currentCard.fsrs,
         };
 
         if (practice) {
@@ -101,7 +102,8 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
                 outcome.interval,
                 outcome.nextReviewDate,
                 outcome.easeFactor,
-                outcome.difficulty
+                outcome.difficulty,
+                outcome.fsrs
             ).then(({ error }) => {
                 if (error) console.error('Failed to update card SRS:', error);
             });

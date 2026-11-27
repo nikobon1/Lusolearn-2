@@ -1,8 +1,11 @@
 import { Difficulty, Flashcard } from '../../types';
+import type { FsrsState } from '../../domain/fsrs';
 import { supabase } from '../supabase';
 
 /** Set once the database reports that flashcards.difficulty doesn't exist (migration not applied yet). */
 let difficultyColumnMissing = false;
+/** Same for flashcards.fsrs (migration 20261130_fsrs.sql). */
+let fsrsColumnMissing = false;
 
 const isMissingColumn = (error: { code?: string; message?: string } | null) =>
     !!error && (error.code === 'PGRST204' || error.code === '42703' || /difficulty/i.test(error.message || '') && /column/i.test(error.message || ''));
@@ -16,9 +19,21 @@ export const updateFlashcardSrs = async (
     interval: number,
     nextReviewDate: number,
     easeFactor: number,
-    difficulty: Difficulty
+    difficulty: Difficulty,
+    fsrs?: FsrsState
 ) => {
-    const schedule = { interval, next_review_date: nextReviewDate, ease_factor: easeFactor };
+    const base = { interval, next_review_date: nextReviewDate, ease_factor: easeFactor };
+    if (fsrs && !fsrsColumnMissing) {
+        const extra = difficultyColumnMissing ? {} : { difficulty };
+        const result = await supabase.from('flashcards').update({ ...base, ...extra, fsrs }).eq('id', cardId);
+        if (!(result.error && /fsrs/i.test(result.error.message || ''))) {
+            if (!isMissingColumn(result.error)) return result;
+        } else {
+            fsrsColumnMissing = true;
+            console.warn('[SRS] flashcards.fsrs column is missing — saving schedule without FSRS state. Run supabase/migrations/20261130_fsrs.sql.');
+        }
+    }
+    const schedule = base;
     if (!difficultyColumnMissing) {
         const result = await supabase.from('flashcards').update({ ...schedule, difficulty }).eq('id', cardId);
         if (!isMissingColumn(result.error)) return result;
