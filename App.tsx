@@ -13,6 +13,8 @@ import { notifyError, notifyInfo, notifySuccess } from './lib/notifications';
 import { activeCards, withPaused } from './domain/paused';
 import { usePracticeLog } from './hooks/usePracticeLog';
 import { useReviewHistory } from './hooks/useReviewHistory';
+import { useStudyTime } from './hooks/useStudyTime';
+import { combineStudyTime, estimateFromAnswers } from './domain/studyTime';
 import { CONJUGATIONS_PER_DAY, PHRASES_PER_DAY, RouteStep, buildTodayRoute } from './domain/todayRoute';
 import { answeredOn, dayKey } from './domain/practiceLog';
 import type { Situation } from './domain/phraseTemplates';
@@ -87,6 +89,11 @@ export default function App() {
     const plan = useDailyPlan(studyableCards, session?.user.id);
     const practiceLog = usePracticeLog(session?.user.id);
     const reviewHistory = useReviewHistory(session?.user.id);
+    const trackedTime = useStudyTime(session?.user.id, view);
+    const studySeconds = useMemo(() => combineStudyTime(
+        trackedTime,
+        estimateFromAnswers([...reviewHistory.records.map(r => r.at), ...practiceLog.entries.filter(e => e.verdict !== 'override').map(e => e.at)]),
+    ), [trackedTime, reviewHistory.records, practiceLog.entries]);
 
     // «Занятие на сегодня»
     const [topicByTerm, setTopicByTerm] = useState<Map<string, Topic>>(new Map());
@@ -354,6 +361,7 @@ export default function App() {
                     reviewRecords={reviewHistory.records} practiceEntries={practiceLog.entries}
                     onShowCards={(title, list) => setListModalConfig({ title, filter: 'learned', cardIds: list.map(c => c.id) })}
                     onPracticeCards={(list) => { if (list.length) openStudy(list, true); }}
+                    studySeconds={studySeconds}
                 />
             )}
 

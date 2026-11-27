@@ -49,6 +49,7 @@ interface DashboardProps {
     practiceEntries: PracticeEntry[];
     onShowCards: (title: string, cards: Flashcard[]) => void;
     onPracticeCards: (cards: Flashcard[]) => void;
+    studySeconds: Record<string, number>;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
 }
@@ -132,7 +133,7 @@ const StudyModeButton: React.FC<{ mode: StudyMode; open: boolean; onToggleInfo: 
 const DashboardView: React.FC<DashboardProps> = ({
     session, user, cards, setCards, folders, setFolders,
     setView, onStartStudy, onShowStudyConfig, onOpenList, onStudySingleCard,
-    planSummary, planSettings, onChangePlanSettings, onStartPlan, routeSteps, onRouteStep, onStartChoice, reviewRecords, practiceEntries, onShowCards, onPracticeCards,
+    planSummary, planSettings, onChangePlanSettings, onStartPlan, routeSteps, onRouteStep, onStartChoice, reviewRecords, practiceEntries, onShowCards, onPracticeCards, studySeconds,
     theme, toggleTheme
 }) => {
     // Local State for Dashboard UI
@@ -465,7 +466,7 @@ const DashboardView: React.FC<DashboardProps> = ({
                             steps={routeSteps} onStep={onRouteStep} onMorePhrases={() => { const p = routeSteps.find(s => s.id === 'phrases'); if (p) onRouteStep(p); }} />
                         <StatsWidget cards={cards} user={user} records={reviewRecords} practice={practiceEntries} markedKnown={frequencyProgress.knownKeys}
                             settings={planSettings} onChangeSettings={onChangePlanSettings} onShowCards={onShowCards} onPracticeCards={onPracticeCards}
-                            onAddWords={() => setView(ViewState.Frequency)} />
+                            onAddWords={() => setView(ViewState.Frequency)} studySeconds={studySeconds} />
 
                         {/* Study Actions */}
                         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-3">

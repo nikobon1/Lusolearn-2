@@ -5,6 +5,7 @@ import { FrequencyEntry, loadFrequencyDictionary } from '../domain/frequencyDict
 import { PlanSettings } from '../domain/dailyPlan';
 import { PracticeEntry, dayKey } from '../domain/practiceLog';
 import { isPaused } from '../domain/paused';
+import { formatMinutes, lastDays } from '../domain/studyTime';
 import {
     ReviewRecord, STAGE_LABELS, Stage, accuracyAdvice, activityByDay, currentStreak, hardWords, practiceScores,
     recallAccuracy, reviewForecast, speechCoverage, stageCounts, stageOf,
@@ -21,6 +22,8 @@ interface StatsWidgetProps {
     onShowCards: (title: string, cards: Flashcard[]) => void;
     onPracticeCards: (cards: Flashcard[]) => void;
     onAddWords: () => void;
+    /** Study seconds per day (tracked + estimated for older days) */
+    studySeconds: Record<string, number>;
 }
 
 const STAGE_COLORS: Record<Stage, string> = {
@@ -69,7 +72,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode; aside?: Reac
 };
 
 const StatsWidget: React.FC<StatsWidgetProps> = ({
-    cards: allCards, user, records, practice, markedKnown, settings, onChangeSettings, onShowCards, onPracticeCards, onAddWords,
+    cards: allCards, user, records, practice, markedKnown, settings, onChangeSettings, onShowCards, onPracticeCards, onAddWords, studySeconds,
 }) => {
     const [open, setOpen] = useState(() => {
         try { return localStorage.getItem('luso_stats_open') === '1'; } catch { return false; }
@@ -87,6 +90,8 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
     const activity = useMemo(() => activityByDay(records, practice, user.learningHistory), [records, practice, user.learningHistory]);
     const streak = currentStreak(activity);
     const studied = cards.filter(c => c.interval > 0).length;
+    const week = lastDays(studySeconds, 7);
+    const todayMinutes = week[week.length - 1].minutes;
 
     // ---------- Collapsed ----------
     if (!open) {
@@ -96,7 +101,7 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
                     <ChartIcon className="h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <span className="font-bold text-slate-800 dark:text-white">Статистика</span>
                     <span className="truncate text-xs text-slate-500 dark:text-slate-400">
-                        {coverage ? `${pct(coverage.known)} речи` : ''}{streak > 0 ? ` · 🔥 ${streak}` : ''}
+                        {coverage ? `${pct(coverage.known)} речи` : ''}{streak > 0 ? ` · 🔥 ${streak}` : ''}{todayMinutes > 0 ? ` · ⏱ ${formatMinutes(todayMinutes)}` : ''}
                     </span>
                 </button>
                 <button
@@ -213,6 +218,43 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
                     ))}
                 </div>
             </Section>
+
+            {/* 3b. Study time */}
+            {(() => {
+                const total = week.reduce((m, d) => m + d.minutes, 0);
+                const avg = Math.round(total / 7);
+                const activeDays = week.filter(d => d.minutes > 0);
+                const avgActive = activeDays.length ? Math.round(total / activeDays.length) : 0;
+                const max = Math.max(1, ...week.map(d => d.minutes));
+                return (
+                    <Section title="Время занятий" aside={<span className="text-xs text-slate-400">7 дней</span>} info={<>
+                        <p>Сколько минут вы занимались в каждый из последних 7 дней: карточки, фразы, глаголы, диалоги, истории, «С нуля» и видеоуроки. Время идёт, только пока открыт учебный экран и вы что-то делаете — если минуту ничего не нажимать, таймер останавливается. Телефон и компьютер суммируются.</p>
+                        <p>Для дней до появления таймера время оценено по вашим ответам (паузы длиннее 2 минут не считаются).</p>
+                        <p><b>В среднем</b> — за все 7 дней, включая пропущенные; <b>в дни занятий</b> — только по дням, когда вы занимались. Для языка лучше 15 минут каждый день, чем час раз в неделю.</p>
+                    </>}>
+                        <div className="mb-2 grid grid-cols-3 gap-2 text-center">
+                            <div className="rounded-xl bg-slate-50 py-2 dark:bg-slate-700/40"><p className="text-lg font-bold text-slate-800 dark:text-white">{formatMinutes(todayMinutes)}</p><p className="text-[10px] uppercase text-slate-400">сегодня</p></div>
+                            <div className="rounded-xl bg-slate-50 py-2 dark:bg-slate-700/40"><p className="text-lg font-bold text-slate-800 dark:text-white">{formatMinutes(avg)}</p><p className="text-[10px] uppercase text-slate-400">в среднем/день</p></div>
+                            <div className="rounded-xl bg-slate-50 py-2 dark:bg-slate-700/40"><p className="text-lg font-bold text-slate-800 dark:text-white">{formatMinutes(total)}</p><p className="text-[10px] uppercase text-slate-400">за неделю</p></div>
+                        </div>
+                        <div className="relative flex h-24 items-end gap-1.5">
+                            {avg > 0 && (
+                                <div className="pointer-events-none absolute inset-x-0 border-t border-dashed border-emerald-400/70" style={{ bottom: `${16 + (avg / max) * 56}px` }}>
+                                    <span className="absolute -top-2 left-0 rounded bg-white px-1 text-[10px] font-bold leading-none text-emerald-600 dark:bg-slate-800 dark:text-emerald-400">ср. {avg}</span>
+                                </div>
+                            )}
+                            {week.map((d, i) => (
+                                <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{d.minutes || ''}</span>
+                                    <div className={`w-full rounded-t ${i === week.length - 1 ? 'bg-emerald-500' : 'bg-emerald-300 dark:bg-emerald-700'}`} style={{ height: `${d.minutes ? Math.max(4, (d.minutes / max) * 56) : 0}px` }} />
+                                    <span className="text-[10px] text-slate-400">{i === week.length - 1 ? 'Сег' : WEEKDAYS[d.date.getDay()]}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {activeDays.length > 0 && activeDays.length < 7 && <p className="mt-1 text-xs text-slate-400">В дни занятий — в среднем {formatMinutes(avgActive)}.</p>}
+                    </Section>
+                );
+            })()}
 
             {/* 4. Accuracy */}
             <Section title="Точность вспоминания" info={<>
