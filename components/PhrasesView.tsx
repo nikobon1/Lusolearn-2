@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Difficulty, Flashcard } from '../types';
 import {
-    PhraseDrillItem, PhraseStats, PhraseTemplate, PhraseVerdict as Verdict, SITUATIONS, Situation, TEMPLATES, buildPhraseDrill, checkSentence, templatesBySituation,
+    PhraseDrillItem, PhraseStats, PhraseTemplate, PhraseVerdict as Verdict, SITUATIONS, Situation, TEMPLATES, buildPhraseDrill, checkSentenceDetailed, templatesBySituation,
 } from '../domain/phraseTemplates';
 import { loadAudio, playAudio } from '../services/geminiService';
 import { notifyError, notifySuccess } from '../lib/notifications';
@@ -81,7 +81,7 @@ const PhrasesView: React.FC<Props> = ({ cards, onCardsCreated, ensureFolder, pra
     const [queue, setQueue] = useState<(PhraseDrillItem & { retry?: boolean })[]>([]);
     const [index, setIndex] = useState(0);
     const [value, setValue] = useState('');
-    const [checked, setChecked] = useState<{ verdict: Verdict; given: string; overridden?: boolean } | null>(null);
+    const [checked, setChecked] = useState<{ verdict: Verdict; given: string; overridden?: boolean; bySlot?: boolean } | null>(null);
     const [results, setResults] = useState<{ item: PhraseDrillItem; verdict: Verdict }[]>([]);
     const [showHint, setShowHint] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -162,9 +162,10 @@ const PhrasesView: React.FC<Props> = ({ cards, onCardsCreated, ensureFolder, pra
         if (!current || checked) return;
         const given = giveUp ? '' : value.trim();
         if (!giveUp && !given) return;
-        const verdict: Verdict = giveUp ? 'wrong' : checkSentence(given, current.example.pt);
+        const result = giveUp ? { verdict: 'wrong' as Verdict, bySlot: false } : checkSentenceDetailed(given, current.example.pt, current.template.pt);
+        const verdict = result.verdict;
         checkedAt.current = Date.now();
-        setChecked({ verdict, given });
+        setChecked({ verdict, given, bySlot: result.bySlot });
         if (!current.retry) {
             setResults(prev => [...prev, { item: current, verdict }]);
             record(current, verdict);
@@ -251,6 +252,7 @@ const PhrasesView: React.FC<Props> = ({ cards, onCardsCreated, ensureFolder, pra
                         <p className="mb-4 text-2xl font-bold text-slate-800 dark:text-white">{current.example.ru}</p>
                         <p className="mb-4 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-700/40 dark:text-slate-300">
                             Шаблон: <span className="font-serif font-bold text-slate-800 dark:text-white">{t.pt}</span>
+                            <span className="mt-0.5 block text-xs text-slate-400">Напишите всю фразу или только то, что стоит вместо «…»</span>
                         </p>
 
                         {!checked ? (
@@ -269,7 +271,7 @@ const PhrasesView: React.FC<Props> = ({ cards, onCardsCreated, ensureFolder, pra
                             <div className="space-y-3">
                                 <div className={`rounded-2xl border p-3 ${checked.verdict === 'correct' ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20' : checked.verdict === 'almost' ? 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20' : 'border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20'}`}>
                                     <p className="font-bold text-slate-800 dark:text-white">
-                                        {checked.verdict === 'correct' ? (checked.overridden ? '✓ Засчитано' : '✓ Верно') : checked.verdict === 'almost' ? '≈ Почти — сравните написание' : '✗ Правильно так:'}
+                                        {checked.verdict === 'correct' ? (checked.overridden ? '✓ Засчитано' : checked.bySlot ? '✓ Верно! Целиком фраза звучит так:' : '✓ Верно') : checked.verdict === 'almost' ? '≈ Почти — сравните написание' : '✗ Правильно так:'}
                                     </p>
                                     <div className="mt-1 flex items-center gap-2">
                                         <p className="flex-1 font-serif text-lg text-slate-800 dark:text-slate-100">{current.example.pt}</p>
