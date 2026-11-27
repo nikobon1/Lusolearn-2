@@ -327,12 +327,45 @@ const distance = (a: string, b: string) => {
     return prev[b.length];
 };
 
-/** Whole-sentence check: punctuation/case ignored; accents or a couple of typos → "almost". */
-export const checkSentence = (given: string, expected: string): PhraseVerdict => {
+const compare = (given: string, expected: string): PhraseVerdict => {
     const g = norm(given), e = norm(expected);
-    if (!g) return 'wrong';
+    if (!g || !e) return 'wrong';
     if (g === e) return 'correct';
     const ga = noAccents(g), ea = noAccents(e);
     if (ga === ea) return 'almost';
     return distance(ga, ea) <= Math.max(1, Math.floor(ea.length / 15)) ? 'almost' : 'wrong';
+};
+
+/** The part of the example that fills the template's «…» ("Queria …, se faz favor." → "uma mesa para dois"). */
+export const slotFiller = (templatePt: string, examplePt: string): string | null => {
+    const parts = templatePt.split('…');
+    if (parts.length !== 2) return null;
+    const pre = norm(parts[0]), post = norm(parts[1]), e = norm(examplePt);
+    if (!e.startsWith(pre) || !e.endsWith(post)) return null;
+    const filler = e.slice(pre.length, e.length - post.length).trim();
+    return filler || null;
+};
+
+/**
+ * Accepts the whole sentence or just the words that go in place of «…» (the template is on screen).
+ * Punctuation/case ignored; accents or a couple of typos → "almost".
+ * `bySlot` = the learner answered with the filler only.
+ */
+export const checkSentence = (given: string, expected: string, templatePt?: string): PhraseVerdict => {
+    return checkSentenceDetailed(given, expected, templatePt).verdict;
+};
+
+export const checkSentenceDetailed = (given: string, expected: string, templatePt?: string): { verdict: PhraseVerdict; bySlot: boolean } => {
+    const whole = compare(given, expected);
+    if (whole === 'correct' || !templatePt) return { verdict: whole, bySlot: false };
+    const filler = slotFiller(templatePt, expected);
+    if (!filler) return { verdict: whole, bySlot: false };
+    const slot = compare(given, filler);
+    const rank = { correct: 2, almost: 1, wrong: 0 } as const;
+    if (rank[slot] > rank[whole]) return { verdict: slot, bySlot: true };
+    // Started the frame but dropped its other half ("Queria uma mesa para dois" without "se faz favor") → almost
+    const [pre, post] = templatePt.split('…').map(norm);
+    const partial = [pre ? `${pre} ${filler}` : '', post ? `${filler} ${post}` : ''].filter(Boolean);
+    if (whole === 'wrong' && partial.some(p => compare(given, p) !== 'wrong')) return { verdict: 'almost', bySlot: false };
+    return { verdict: whole, bySlot: false };
 };
