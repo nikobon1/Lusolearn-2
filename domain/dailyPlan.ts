@@ -39,6 +39,8 @@ export const REVIEWS_PER_DAY_OPTIONS = [30, 60, 100, 200];
 
 /** Cards per portion before a "continue / finish" checkpoint. */
 export const PORTION_SIZE = 20;
+/** Words forgotten earlier today are placed after this many other reviews in a new session. */
+export const RELEARN_OFFSET = 3;
 /** One new card after this many reviews. */
 export const REVIEWS_BETWEEN_NEW = 4;
 /** Pause new cards while more reviews than this are due. */
@@ -156,7 +158,12 @@ export const buildPlanQueue = (
     const summary = summarizePlan(cards, progress, settings, now);
     const { relearn, fresh } = splitDue(cards, progress, now);
     const limited = summary.reviewsLeft - relearn.length + extra;
-    const reviews = [...relearn, ...fresh.slice(0, limited)].filter(c => !exclude.has(c.id));
+    // Words forgotten earlier today go a few cards in, not first — otherwise every new session
+    // opens with the same failed word and it feels like a loop
+    const freshPart = fresh.slice(0, limited).filter(c => !exclude.has(c.id));
+    const relearnPart = relearn.filter(c => !exclude.has(c.id));
+    const at = Math.min(RELEARN_OFFSET, freshPart.length);
+    const reviews = [...freshPart.slice(0, at), ...relearnPart, ...freshPart.slice(at)];
     const newCards = getNewCards(cards)
         .filter(c => !exclude.has(c.id))
         .slice(0, summary.newLeft);
