@@ -7,7 +7,7 @@ import { PracticeEntry, dayKey } from '../domain/practiceLog';
 import { isPaused } from '../domain/paused';
 import { formatMinutes, lastDays } from '../domain/studyTime';
 import {
-    ReviewRecord, STAGE_LABELS, Stage, accuracyAdvice, activityByDay, currentStreak, hardWords, practiceScores,
+    ReviewRecord, STAGE_LABELS, STREAK_MILESTONES, Stage, WEEKLY_GOAL_DAYS, accuracyAdvice, activityByDay, currentWeek, hardWords, practiceScores, streakInfo,
     recallAccuracy, reviewForecast, speechCoverage, stageCounts, stageOf,
 } from '../domain/stats';
 
@@ -88,7 +88,8 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
     const cards = useMemo(() => allCards.filter(c => !isPaused(c)), [allCards]);
     const coverage = useMemo(() => (dictionary ? speechCoverage(dictionary, cards, markedKnown) : null), [dictionary, cards, markedKnown]);
     const activity = useMemo(() => activityByDay(records, practice, user.learningHistory), [records, practice, user.learningHistory]);
-    const streak = currentStreak(activity);
+    const streakData = useMemo(() => streakInfo(activity), [activity]);
+    const streak = streakData.current;
     const studied = cards.filter(c => c.interval > 0).length;
     const week = lastDays(studySeconds, 7);
     const todayMinutes = week[week.length - 1].minutes;
@@ -125,16 +126,6 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
     const forecastMax = Math.max(1, ...forecast.map(f => f.count));
     const scores = practiceScores(practice);
 
-    // Calendar: 12 weeks, columns = weeks (Mon..Sun), last column = this week
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const mondayOffset = (today.getDay() + 6) % 7;
-    const WEEKS = 16;
-    const gridStart = new Date(today.getTime() - (mondayOffset + 7 * (WEEKS - 1)) * 86_400_000);
-    const counts = [...activity.values()].filter(n => n > 0).sort((a, b) => a - b);
-    const q = (p: number) => counts.length ? counts[Math.min(counts.length - 1, Math.floor(p * counts.length))] : 1;
-    const shade = (n: number) => !n ? 'bg-slate-100 dark:bg-slate-700/60'
-        : n <= q(0.33) ? 'bg-emerald-200 dark:bg-emerald-900' : n <= q(0.66) ? 'bg-emerald-400 dark:bg-emerald-700' : 'bg-emerald-600 dark:bg-emerald-500';
-    const activeDays28 = Array.from({ length: 28 }, (_, i) => activity.get(dayKey(today.getTime() - i * 86_400_000)) || 0).filter(Boolean).length;
 
     return (
         <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -196,28 +187,76 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({
                 </div>
             </Section>
 
-            {/* 3. Regularity */}
-            <Section title="Регулярность" info={<>
-                <p>Каждая клетка — один день, колонки — недели (сверху понедельник). Чем темнее клетка, тем больше было ответов: повторения, фразы и глаголы вместе.</p>
-                <p><b>Серия</b> — сколько дней подряд вы занимались. Сегодняшний день засчитается после первого ответа, а серия не сгорит до конца дня.</p>
-                <p>Для памяти 10 минут каждый день полезнее, чем час раз в неделю: повторения приходят точно в срок и не копятся.</p>
-            </>} aside={<span className="text-xs text-slate-400">{activeDays28} из 28 дней</span>}>
-                <p className="mb-2 text-sm text-slate-700 dark:text-slate-200">
-                    {streak > 0 ? <>🔥 <b>{streak} {daysWord(streak)}</b> подряд</> : 'Серия начнётся с сегодняшнего занятия'}
-                </p>
-                <div className="flex gap-[3px] overflow-hidden">
-                    {Array.from({ length: WEEKS }, (_, w) => (
-                        <div key={w} className="flex flex-col gap-[3px]">
-                            {Array.from({ length: 7 }, (_, d) => {
-                                const date = new Date(gridStart.getTime() + (w * 7 + d) * 86_400_000);
-                                if (date > today) return <span key={d} className="h-3.5 w-3.5" />;
-                                const n = activity.get(dayKey(date.getTime())) || 0;
-                                return <span key={d} className={`h-3.5 w-3.5 rounded-[3px] ${shade(n)}`} title={`${date.toLocaleDateString('ru-RU')}: ${n} ответов`} />;
-                            })}
+            {/* 3. Regularity — this week, streak, record, milestones */}
+            {(() => {
+                const weekDays = currentWeek(activity, streakData.frozen);
+                const weekDone = weekDays.filter(d => d.active).length;
+                const goalMet = weekDone >= WEEKLY_GOAL_DAYS;
+                const next = streakData.nextMilestone;
+                const prev = [...STREAK_MILESTONES].reverse().find(m => m <= streak) ?? 0;
+                const progress = next ? (streak - prev) / (next - prev) : 1;
+                return (
+                    <Section title="Регулярность" info={<>
+                        <p><b>Серия</b> — сколько дней подряд вы занимались (хотя бы один ответ, фраза или реплика в диалоге). Сегодняшний день засчитается после первого занятия, до конца дня серия не сгорит.</p>
+                        <p><b>❄️ Заморозка:</b> один пропущенный день в неделю не обнуляет серию — жизнь бывает. Два дня подряд без занятий серию сбрасывают.</p>
+                        <p><b>Недельная цель</b> — {WEEKLY_GOAL_DAYS} дней из 7. Награды открываются на сериях {STREAK_MILESTONES.slice(0, 6).join(', ')}… дней. Для памяти 10 минут каждый день полезнее, чем час раз в неделю.</p>
+                    </>}>
+                        <div className="flex items-center gap-3">
+                            <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-3xl ${streak > 0 ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-slate-100 grayscale dark:bg-slate-700'}`}>🔥</div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-slate-800 dark:text-white">
+                                    {streak > 0 ? <><b className="text-2xl">{streak}</b> <span className="text-sm">{daysWord(streak)} подряд</span></> : <span className="text-sm">Начните серию сегодня</span>}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Рекорд: {streakData.best} {daysWord(streakData.best)}{streakData.freezeReady ? ' · ❄️ заморозка готова' : ' · ❄️ заморозка использована'}
+                                </p>
+                            </div>
                         </div>
-                    ))}
-                </div>
-            </Section>
+
+                        {/* This week */}
+                        <div className="mt-3 flex justify-between">
+                            {weekDays.map((d, i) => (
+                                <div key={i} className="flex flex-col items-center gap-1">
+                                    <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
+                                        d.active ? 'bg-emerald-500 text-white'
+                                        : d.frozen ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300'
+                                        : d.today ? 'border-2 border-dashed border-emerald-400 text-emerald-600 dark:text-emerald-400'
+                                        : d.future ? 'border border-slate-200 text-slate-300 dark:border-slate-700 dark:text-slate-600'
+                                        : 'bg-slate-100 text-slate-400 dark:bg-slate-700'}`}>
+                                        {d.active ? '✓' : d.frozen ? '❄' : d.today ? '?' : ''}
+                                    </span>
+                                    <span className={`text-[10px] ${d.today ? 'font-bold text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>{['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][i]}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <p className={`mt-2 text-xs ${goalMet ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                            {goalMet ? `🎯 Недельная цель выполнена: ${weekDone} из 7 дней!` : `Недельная цель: ${weekDone} из ${WEEKLY_GOAL_DAYS} дней`}
+                        </p>
+
+                        {/* Milestones */}
+                        <div className="mt-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-700/40">
+                            <div className="mb-1.5 flex items-center justify-between text-xs">
+                                <span className="font-bold text-slate-600 dark:text-slate-300">{next ? `До награды «${next} дней»` : 'Все награды получены!'}</span>
+                                {next && <span className="text-slate-400">ещё {next - streak} {daysWord(next - streak)}</span>}
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-white dark:bg-slate-800">
+                                <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-400 transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                                {STREAK_MILESTONES.slice(0, 6).map(m => {
+                                    const got = streakData.reached.includes(m);
+                                    return (
+                                        <span key={m} title={got ? `Получено: серия ${m} дней` : `Серия ${m} дней`}
+                                            className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${got ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' : 'bg-white text-slate-300 dark:bg-slate-800 dark:text-slate-600'}`}>
+                                            {got ? '🏅' : '🔒'} {m}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </Section>
+                );
+            })()}
 
             {/* 3b. Study time */}
             {(() => {

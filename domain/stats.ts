@@ -186,3 +186,85 @@ export const practiceScores = (entries: PracticeEntry[], days = 30, now = Date.n
         verbs: toList(verbs, k => TENSE_LABELS[k as Tense]?.pt || k),
     };
 };
+
+// ---------- Streak with a weekly freeze (gamification) ----------
+
+export const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100, 200, 365];
+export const WEEKLY_GOAL_DAYS = 5;
+
+export interface StreakInfo {
+    current: number;
+    best: number;
+    /** Missed days saved by the weekly freeze (YYYY-MM-DD) */
+    frozen: Set<string>;
+    /** A freeze is available right now (none used in the last 7 days) */
+    freezeReady: boolean;
+    nextMilestone: number | null;
+    /** Highest milestone reached by the best streak */
+    reached: number[];
+}
+
+/**
+ * Days in a row with study. One missed day per 7 days is "frozen" and doesn't break the streak
+ * (a single day only — two missed days in a row end it). Today without study yet doesn't break it either.
+ */
+export const streakInfo = (activity: Map<string, number>, now = Date.now()): StreakInfo => {
+    const active = (t: number) => (activity.get(dayKey(t)) || 0) > 0;
+    const days = [...activity.entries()].filter(([, n]) => n > 0).map(([d]) => d).sort();
+
+    // Walk forward through history to find every run (for the record) — freezes included
+    const frozenAll = new Set<string>();
+    let best = 0;
+    if (days.length) {
+        const start = new Date(days[0] + 'T12:00:00').getTime();
+        let run = 0, lastFreeze = -Infinity;
+        for (let t = start, i = 0; t <= now; t += DAY, i++) {
+            if (active(t)) { run++; best = Math.max(best, run); continue; }
+            const isToday = dayKey(t) === dayKey(now);
+            if (isToday) break;
+            const nextActive = active(t + DAY) || dayKey(t + DAY) === dayKey(now);
+            if (run > 0 && i - lastFreeze >= 7 && nextActive && active(t - DAY)) {
+                frozenAll.add(dayKey(t));
+                lastFreeze = i;
+                continue; // the run goes on, the frozen day itself doesn't add to it
+            }
+            run = 0;
+        }
+    }
+
+    // Current streak: back from today (or yesterday), stepping over frozen days
+    let current = 0;
+    let t = now;
+    if (!active(t)) t -= DAY;
+    while (active(t) || frozenAll.has(dayKey(t))) {
+        if (active(t)) current++;
+        t -= DAY;
+    }
+    best = Math.max(best, current);
+    const usedRecently = [...frozenAll].some(d => d > dayKey(now - 7 * DAY));
+    return {
+        current,
+        best,
+        frozen: frozenAll,
+        freezeReady: !usedRecently,
+        nextMilestone: STREAK_MILESTONES.find(m => m > current) ?? null,
+        reached: STREAK_MILESTONES.filter(m => m <= best),
+    };
+};
+
+/** This week (Monday..Sunday) for the day strip. */
+export const currentWeek = (activity: Map<string, number>, frozen: Set<string>, now = Date.now()) => {
+    const today = new Date(now); today.setHours(12, 0, 0, 0);
+    const monday = today.getTime() - ((today.getDay() + 6) % 7) * DAY;
+    return Array.from({ length: 7 }, (_, i) => {
+        const t = monday + i * DAY;
+        const key = dayKey(t);
+        return {
+            date: new Date(t),
+            active: (activity.get(key) || 0) > 0,
+            frozen: frozen.has(key),
+            today: key === dayKey(now),
+            future: t > today.getTime() + 1000,
+        };
+    });
+};
