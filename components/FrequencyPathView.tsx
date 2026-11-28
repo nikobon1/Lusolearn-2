@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Flashcard } from '../types';
 import {
     BatchFocus, EntryStatus, FrequencyEntry, FREQUENCY_TAG, POS_LABELS, PartOfSpeech, TOPICS, TOPIC_LABELS, Topic,
-    buildCardKeySet, entryKey, getCoverageLevels, getEntryStatus, getNextBatch, getTextCoverage,
+    buildCardKeySet, entryKey, getCoverageLevels, getEntryStatus, getNextBatch,
     loadFrequencyDictionary, rankToFrequency,
 } from '../domain/frequencyDictionary';
 import { useFrequencyProgress } from '../hooks/useFrequencyProgress';
+import { speechCoverage } from '../domain/stats';
 import { buildFlashcard } from '../services/cardFactory';
 import { describeAiError } from '../services/client';
 import { notifyError, notifySuccess } from '../lib/notifications';
@@ -80,6 +81,8 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
     const [loadError, setLoadError] = useState(false);
     const [tab, setTab] = useState<Tab>('today');
     const [focus, setFocus] = useState<BatchFocus>(initialFocus ?? 'all');
+    // Settings are tucked away; opened when the learner came with a topic or changes them
+    const [showSettings, setShowSettings] = useState(!!initialFocus && initialFocus !== 'all');
 
     const [generating, setGenerating] = useState<{ current: number; total: number; word: string } | null>(null);
     const [justCreated, setJustCreated] = useState<Flashcard[]>([]);
@@ -119,9 +122,10 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
         () => dictionary ? getCoverageLevels(dictionary, cardKeys, knownKeys) : [],
         [dictionary, cardKeys, knownKeys]
     );
-    const textCoverage = useMemo(
-        () => dictionary ? getTextCoverage(dictionary, cardKeys, knownKeys) : 0,
-        [dictionary, cardKeys, knownKeys]
+    // Same measure as in Statistics: known = interval ≥ 7 days or marked «Знаю»
+    const speech = useMemo(
+        () => dictionary ? speechCoverage(dictionary, cards, knownKeys) : { known: 0, withLearning: 0, nextMilestone: null, wordsToMilestone: 0 },
+        [dictionary, cards, knownKeys]
     );
 
     const filteredDictionary = useMemo(() => {
@@ -229,7 +233,8 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
                     <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                         <h3 className="font-bold text-slate-800 dark:text-white">Ваш прогресс</h3>
                         <p className="text-sm text-slate-500 sm:text-right dark:text-slate-400">
-                            вы узнаёте <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">≈{Math.round(textCoverage * 100)}%</span> слов в обычной речи
+                            вы знаете <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">≈{Math.round(speech.known * 100)}%</span> слов обычной речи
+                            {speech.withLearning > speech.known + 0.005 && <span className="block text-xs text-slate-400">+{Math.round((speech.withLearning - speech.known) * 100)}% — слова, которые вы сейчас учите</span>}
                         </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -284,79 +289,115 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
                     </div>
                 )}
 
-                {tab === 'today' && (
+                {tab === 'today' && (() => {
+                    const focusLabel = FOCUS_OPTIONS.find(o => o.id === focus)?.label || TOPIC_LABELS[focus as Topic] || 'Все слова';
+                    const plural = (n: number) => (n === 1 ? 'слово' : n < 5 ? 'слова' : 'слов');
+                    return (
                     <section className="space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                                <TargetIcon className="h-5 w-5 text-amber-500" />
-                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Слов в день:</span>
-                                <div className="flex gap-1">
-                                    {GOAL_OPTIONS.map(n => (
-                                        <button key={n} onClick={() => setDailyGoal(n)} className={`h-8 w-9 rounded-lg text-sm font-bold ${dailyGoal === n ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'}`}>
-                                            {n}
-                                        </button>
-                                    ))}
-                                </div>
+                        {/* Main card: the next most useful words + one button */}
+                        <div className="rounded-3xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-900/60 dark:bg-slate-800">
+                            <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-white">
+                                    {batch.length > 0 ? `Следующие ${batch.length} ${plural(batch.length)} для вас` : 'Новых слов не осталось'}
+                                </h3>
+                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                                    сегодня добавлено {addedToday} из {dailyGoal}
+                                </span>
                             </div>
-                            <span className="text-sm text-slate-500 dark:text-slate-400">
-                                Сегодня добавлено: <b className="text-slate-700 dark:text-slate-200">{addedToday}</b> из {dailyGoal}
-                            </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1">
-                            {FOCUS_OPTIONS.map(opt => (
-                                <button key={opt.id} onClick={() => setFocus(opt.id)} className={`rounded-full px-3 py-1 text-xs font-bold ${focus === opt.id ? 'bg-slate-800 text-white dark:bg-emerald-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                            <span className="self-center pr-1 text-xs font-bold text-slate-400">Темы:</span>
-                            {TOPICS.map(topic => (
-                                <button key={topic} onClick={() => setFocus(focus === topic ? 'all' : topic)} className={`rounded-full px-3 py-1 text-xs font-bold ${focus === topic ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-900/20 dark:text-sky-300'}`}>
-                                    {TOPIC_LABELS[topic]}
-                                </button>
-                            ))}
-                        </div>
-
-                        {goalReached && (
-                            <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-                                🎉 Цель на сегодня выполнена. Можно повторить карточки — или взять дополнительную порцию ниже.
-                            </div>
-                        )}
-
-                        {batch.length === 0 ? (
-                            <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500 dark:border-slate-600">
-                                В этой категории не осталось новых слов. Отличная работа!
+                            <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                                {focus === 'all'
+                                    ? 'Самые частые слова живой речи, которых ещё нет в ваших карточках. Чем выше слово в списке, тем чаще оно встречается — и тем полезнее.'
+                                    : <>Подборка: <b>{focusLabel}</b> — самые частые слова этой подборки, которых ещё нет в ваших карточках.</>}
                             </p>
-                        ) : (
-                            <>
-                                <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800">
-                                    {batch.map(entry => (
-                                        <EntryRow
-                                            key={entry.r}
-                                            entry={entry}
-                                            actions={
-                                                <button onClick={() => markKnown(entryKey(entry))} disabled={!!generating} className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40 dark:hover:bg-slate-700" title="Я уже знаю это слово — убрать из порции">
-                                                    <XIcon className="h-3.5 w-3.5" /> Знаю
+
+                            {goalReached && batch.length > 0 && (
+                                <div className="mb-3 rounded-xl bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+                                    🎉 Цель на сегодня выполнена. Можно повторить карточки — или взять ещё порцию.
+                                </div>
+                            )}
+
+                            {batch.length === 0 ? (
+                                <p className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-500 dark:border-slate-600">
+                                    В этой подборке все слова уже в карточках или отмечены «Знаю». Выберите другую подборку ниже.
+                                </p>
+                            ) : (
+                                <>
+                                    <ol className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 dark:divide-slate-700 dark:border-slate-700">
+                                        {batch.map(entry => (
+                                            <EntryRow
+                                                key={entry.r}
+                                                entry={entry}
+                                                actions={
+                                                    <button onClick={() => markKnown(entryKey(entry))} disabled={!!generating} className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40 dark:hover:bg-slate-700" title="Я уже знаю это слово — убрать из порции">
+                                                        <XIcon className="h-3.5 w-3.5" /> Знаю
+                                                    </button>
+                                                }
+                                            />
+                                        ))}
+                                    </ol>
+                                    <p className="mt-2 text-xs text-slate-400">Знакомое слово уберите кнопкой «Знаю» — на его место встанет следующее.</p>
+                                    {/* Stays visible while scrolling the list (above the phone's bottom bar) */}
+                                    <div className="sticky bottom-2 z-10 mt-4">
+                                        <button
+                                            onClick={() => createCards(batch)}
+                                            disabled={!!generating}
+                                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-lg font-bold text-white shadow-xl shadow-emerald-900/20 transition-all hover:bg-emerald-700 disabled:opacity-50"
+                                        >
+                                            <SparklesIcon className="h-5 w-5" />
+                                            Добавить {batch.length} {plural(batch.length)} в карточки
+                                        </button>
+                                    </div>
+                                    <p className="mt-2 text-center text-xs text-slate-400">ИИ сделает для каждого слова примеры, озвучку и картинку. Потом — «Учить сейчас».</p>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Settings, tucked away */}
+                        <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+                            <button onClick={() => setShowSettings(v => !v)} className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left">
+                                <span className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                                    <TargetIcon className="h-4 w-4 text-amber-500" /> Настроить подборку
+                                </span>
+                                <span className="text-xs text-slate-400">{focusLabel} · {dailyGoal} в день {showSettings ? '▴' : '▾'}</span>
+                            </button>
+                            {showSettings && (
+                                <div className="space-y-3 border-t border-slate-100 px-4 pb-4 pt-3 dark:border-slate-700">
+                                    <div>
+                                        <p className="mb-1 text-xs font-bold text-slate-400">Сколько новых слов в день</p>
+                                        <div className="flex gap-1">
+                                            {GOAL_OPTIONS.map(n => (
+                                                <button key={n} onClick={() => setDailyGoal(n)} className={`h-8 w-10 rounded-lg text-sm font-bold ${dailyGoal === n ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                                    {n}
                                                 </button>
-                                            }
-                                        />
-                                    ))}
-                                </ul>
-                                <p className="text-xs text-slate-400">Уже знакомое слово отметьте «Знаю» — на его место придёт следующее по частоте.</p>
-                                <button
-                                    onClick={() => createCards(batch)}
-                                    disabled={!!generating}
-                                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-lg font-bold text-white shadow-lg transition-all hover:bg-emerald-700 disabled:opacity-50"
-                                >
-                                    <SparklesIcon className="h-5 w-5" />
-                                    {goalReached ? 'Добавить ещё' : 'Создать'} {batch.length} {batch.length === 1 ? 'карточку' : batch.length < 5 ? 'карточки' : 'карточек'}
-                                </button>
-                            </>
-                        )}
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="mb-1 text-xs font-bold text-slate-400">Какие слова брать</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {FOCUS_OPTIONS.map(opt => (
+                                                <button key={opt.id} onClick={() => setFocus(opt.id)} className={`rounded-full px-3 py-1 text-xs font-bold ${focus === opt.id ? 'bg-slate-800 text-white dark:bg-emerald-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                                    {opt.label}{opt.id === 'all' ? ' (рекомендуем)' : ''}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="mb-1 text-xs font-bold text-slate-400">Или тема — если нужно срочно для конкретной ситуации</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {TOPICS.map(topic => (
+                                                <button key={topic} onClick={() => setFocus(focus === topic ? 'all' : topic)} className={`rounded-full px-3 py-1 text-xs font-bold ${focus === topic ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-900/20 dark:text-sky-300'}`}>
+                                                    {TOPIC_LABELS[topic]}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </section>
-                )}
+                    );
+                })()}
 
                 {tab === 'dictionary' && (
                     <section className="space-y-3">
@@ -406,7 +447,7 @@ const FrequencyPathView: React.FC<Props> = ({ cards, userId, onCardsCreated, ens
                 )}
 
                 <p className="pb-4 text-center text-[11px] text-slate-400">
-                    Частоты: корпус субтитров OpenSubtitles (FrequencyWords, H. Dave) с поправками под быт. Отметки «знаю» хранятся на этом устройстве.
+                    Частоты: корпус субтитров OpenSubtitles (FrequencyWords, H. Dave) с поправками под быт. Отметки «Знаю» сохраняются в вашем профиле.
                 </p>
             </div>
         </div>
