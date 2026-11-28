@@ -111,8 +111,11 @@ const StudyContainer: React.FC<StudyContainerProps> = ({
 
         // Forgotten card: show it again a few cards later in this session
         let nextQueue = queue;
-        if (rating === 'again' && current.attempt < MAX_RELEARN_ATTEMPTS) {
-            const insertAt = Math.min(currentIndex + 1 + RELEARN_GAP, queue.length);
+        // Never right after itself: at least one other card in between. If nothing else is left,
+        // it isn't repeated now — it comes back in ~10 minutes through today's plan.
+        const othersLeft = queue.slice(currentIndex + 1).filter(item => item.card.id !== currentCard.id).length;
+        if (rating === 'again' && current.attempt < MAX_RELEARN_ATTEMPTS && othersLeft > 0) {
+            const insertAt = currentIndex + 1 + Math.min(RELEARN_GAP, queue.length - currentIndex - 1);
             // In practice the card keeps its real state; in a real session it carries the new schedule
             const again = practice ? currentCard : updatedCard;
             nextQueue = [...queue.slice(0, insertAt), { card: again, attempt: current.attempt + 1 }, ...queue.slice(insertAt)];
